@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TaskFlow - Канбан доска</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial; padding: 20px; background: #f0f2f5; }
+        h1 { color: #1a73e8; }
+        .board { display: flex; gap: 20px; overflow-x: auto; }
+        .column {
+            background: #e9ecef;
+            border-radius: 12px;
+            width: 320px;
+            min-width: 320px;
+            padding: 12px;
+        }
+        .column h3 {
+            margin: 0 0 12px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .task {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: move;
+        }
+        .task h4 { margin: 0 0 5px 0; }
+        .task p { margin: 5px 0; font-size: 12px; color: #666; }
+        .priority-high { border-left: 4px solid #dc3545; }
+        .priority-medium { border-left: 4px solid #ffc107; }
+        .priority-low { border-left: 4px solid #28a745; }
+        .tag {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-right: 4px;
+        }
+        .form-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        input, select, textarea {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover { background: #1557b0; }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 TaskFlow - Канбан доска</h1>
+    
+    <div class="form-panel">
+        <h3>➕ Новая задача</h3>
+        <input type="text" id="title" placeholder="Название задачи" style="width: 200px">
+        <input type="text" id="tags" placeholder="Теги (через запятую)">
+        <select id="priority">
+            <option value="low">Низкий</option>
+            <option value="medium" selected>Средний</option>
+            <option value="high">Высокий</option>
+        </select>
+        <button onclick="createTask()">Создать задачу</button>
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.js"></script>
+    <script>
+        let tasks = [];
+
+        // Подключение к SignalR
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:5000/tasksHub")
+            .build();
+
+        connection.on("TaskCreated", (task) => {
+            showNotification(`✅ Создана: ${task.title}`);
+            loadTasks();
+        });
+
+        connection.on("TaskUpdated", (task) => {
+            showNotification(`🔄 Обновлена: ${task.title} → ${task.status}`);
+            loadTasks();
+        });
+
+        connection.on("TaskDeleted", (id) => {
+            showNotification(`🗑️ Задача удалена`);
+            loadTasks();
+        });
+
+        connection.start().catch(err => console.error(err));
+
+        // Загрузка задач с API
+        async function loadTasks() {
+            const res = await fetch("http://localhost:5000/api/tasks");
+            tasks = await res.json();
+            renderBoard();
+        }
+
+        // Отображение доски
+        function renderBoard() {
+            const columns = [
+                { id: "todo", title: "📝 To Do", color: "#e9ecef" },
+                { id: "progress", title: "⚙️ In Progress", color: "#fff3cd" },
+                { id: "done", title: "✅ Done", color: "#d4edda" }
+            ];
+
+            const boardHtml = columns.map(col => `
+                <div class="column" data-status="${col.id}" style="background: ${col.color}">
+                    <h3>${col.title}</h3>
+                    <div class="tasks-container" data-status="${col.id}">
+                        ${tasks.filter(t => t.status === col.id).map(task => `
+                            <div class="task priority-${task.priority}" draggable="true" data-id="${task.id}" 
+                                 ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                                <h4>${escapeHtml(task.title)}</h4>
+                                <p>${task.description || ''}</p>
+                                <div>
+                                    ${task.tags?.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('') || ''}
+                                </div>
+                                <small>Приоритет: ${task.priority} | ${new Date(task.createdAt).toLocaleTimeString()}</small>
+                                <br>
+                                <button onclick="editTask('${task.id}')" style="margin-top:5px; background:#6c757d">✏️</button>
+                                <button onclick="deleteTask('${task.id}')" style="margin-top:5px; background:#dc3545">🗑️</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById("board").innerHTML = boardHtml;
+            
+            // Настройка drag & drop
+            document.querySelectorAll('.tasks-container').forEach(container => {
+                container.addEventListener('dragover', e => e.preventDefault());
+                container.addEventListener('drop', e => {
+                    e.preventDefault();
+                    const taskId = draggedTaskId;
+                    const newStatus = container.parentElement.dataset.status;
+                    if (taskId && newStatus) {
+                        updateTaskStatus(taskId, newStatus);
+                    }
+                });
+            });
+        }
+
+        let draggedTaskId = null;
+        function dragStart(e) {
+            draggedTaskId = e.target.closest('.task')?.dataset.id;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        function dragEnd(e) { draggedTaskId = null; }
+
+        // Создание задачи
+        async function createTask() {
+            const title = document.getElementById("title").value;
+            if (!title) return alert("Введите название");
+            
+            const tagsStr = document.getElementById("tags").value;
+            const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()) : [];
+            const priority = document.getElementById("priority").value;
+            
+            const newTask = {
+                title: title,
+                description: "",
+                status: "todo",
+                priority: priority,
+                tags: tags,
+                dueDate: null
+            };
+            
+            await fetch("http://localhost:5000/api/tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newTask)
+            });
+            
+            document.getElementById("title").value = "";
+            document.getElementById("tags").value = "";
+        }
+
+        // Обновление статуса (drag & drop)
+        async function updateTaskStatus(taskId, newStatus) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task && task.status !== newStatus) {
+                task.status = newStatus;
+                await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(task)
+                });
+            }
+        }
+
+        // Редактирование
+        function editTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            const newStatus = prompt("Новый статус (todo/progress/done):", task?.status);
+            if (newStatus && ["todo", "progress", "done"].includes(newStatus)) {
+                updateTaskStatus(taskId, newStatus);
+            }
+        }
+
+        // Удаление
+        async function deleteTask(taskId) {
+            if (confirm("Удалить задачу?")) {
+                await fetch(`http://localhost:5000/api/tasks/${taskId}`, { method: "DELETE" });
+            }
+        }
+
+        // Уведомления
+        function showNotification(message) {
+            const notif = document.createElement("div");
+            notif.className = "notification";
+            notif.innerText = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Запуск
+        loadTasks();
+        setInterval(loadTasks, 3000); // Обновление каждые 3 секунды
+    </script>
+</body>
+</html>

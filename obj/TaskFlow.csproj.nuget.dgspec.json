@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Ame\\Desktop\\TaskFlow\\TaskFlow.csproj": {}
+    "C:\\Users\\Ame\\Desktop\\TaskFlow\\Collabo\\TaskFlow.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Ame\\Desktop\\TaskFlow\\TaskFlow.csproj": {
+    "C:\\Users\\Ame\\Desktop\\TaskFlow\\Collabo\\TaskFlow.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Ame\\Desktop\\TaskFlow\\TaskFlow.csproj",
+        "projectUniqueName": "C:\\Users\\Ame\\Desktop\\TaskFlow\\Collabo\\TaskFlow.csproj",
         "projectName": "TaskFlow",
-        "projectPath": "C:\\Users\\Ame\\Desktop\\TaskFlow\\TaskFlow.csproj",
+        "projectPath": "C:\\Users\\Ame\\Desktop\\TaskFlow\\Collabo\\TaskFlow.csproj",
         "packagesPath": "C:\\Users\\Ame\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Ame\\Desktop\\TaskFlow\\obj\\",
+        "outputPath": "C:\\Users\\Ame\\Desktop\\TaskFlow\\Collabo\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Ame\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -51,6 +51,10 @@
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[10.0.8, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[10.1.7, )"
             }
           },
           "imports": [
