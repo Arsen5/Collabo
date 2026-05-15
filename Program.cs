@@ -23,9 +23,12 @@ builder.Services.AddSignalR();
 // 2. Настройка MassTransit для работы с RabbitMQ (Event-driven)
 builder.Services.AddMassTransit(x =>
 {
+    x.AddConsumer<TaskDeletedConsumer>(); // Вот эта строчка!
+
     x.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host("localhost", "/");
+        cfg.ConfigureEndpoints(context); // А эта строка создаст очередь в RabbitMQ автоматически
     });
 });
 
@@ -108,15 +111,17 @@ app.MapPut("/api/tasks/{id}", async (Guid id, TaskItem update, IHubContext<Tasks
 // Модель данных
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 // DELETE: удалить задачу
-app.MapDelete("/api/tasks/{id}", async (Guid id, IHubContext<TasksHub> hub) =>
+app.MapDelete("/api/tasks/{id}", async (Guid id, IHubContext<TaskHub> hub, IPublishEndpoint publishEndpoint) =>
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
-    if (!tasks.ContainsKey(id)) return Results.NotFound();
+    if (tasks.TryRemove(id, out _))
+    {
+        // 1. Уведомляем тех, кто сейчас на сайте через SignalR
+        await hub.Clients.All.SendAsync("TaskDeleted", id);
 
-    tasks.TryRemove(id, out _);
-    await hub.Clients.All.SendAsync("TaskDeleted", id);
-    return Results.Ok();
+        // 2. Отправляем событие в RabbitMQ через MassTransit для фоновых процессов
+        await publishEndpoint.Publish(new TaskDeleted { Id = id });
+
+        return Results.Ok();
+    }
+    return Results.NotFound();
 });
-
-app.Run();
