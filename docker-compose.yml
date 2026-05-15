@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_hackathon
+    ports:
+      - "5672:5672"   # Порт для кода (C#)
+      - "15672:15672" # Порт для админки в браузере
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
