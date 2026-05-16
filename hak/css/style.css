@@ -436,3 +436,21 @@ button {
     background: #e2e8f0;
     border-radius: 12px;
 }
+.task-overdue {
+    border: 2px solid #dc3545;
+    background: #fff5f5;
+}
+
+.task-overdue .due-date {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.task-overdue::before {
+    content: "⚠️ ПРОСРОЧЕНО! ";
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 10px;
+    display: block;
+    margin-bottom: 5px;
+}

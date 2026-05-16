@@ -45,6 +45,15 @@ app.MapPost("/api/tasks", async (TaskItem task, AppDbContext db, IHubContext<Tas
     task.Id = Guid.NewGuid();
     task.CreatedAt = DateTime.UtcNow;
     task.Tags ??= new List<string>();
+
+    // Преобразование даты в UTC
+    if (task.DueDate.HasValue)
+    {
+        task.DueDate = task.DueDate.Value.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(task.DueDate.Value, DateTimeKind.Utc)
+            : task.DueDate.Value.ToUniversalTime();
+    }
+
     db.Tasks.Add(task);
     await db.SaveChangesAsync();
     await hub.Clients.All.SendAsync("TaskCreated", task);
@@ -61,7 +70,18 @@ app.MapPut("/api/tasks/{id}", async (Guid id, TaskItem update, AppDbContext db, 
     task.Status = update.Status;
     task.Priority = update.Priority;
     task.Tags = update.Tags ?? new List<string>();
-    task.DueDate = update.DueDate;
+
+    // Преобразование даты в UTC
+    if (update.DueDate.HasValue)
+    {
+        task.DueDate = update.DueDate.Value.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(update.DueDate.Value, DateTimeKind.Utc)
+            : update.DueDate.Value.ToUniversalTime();
+    }
+    else
+    {
+        task.DueDate = null;
+    }
 
     await db.SaveChangesAsync();
     await hub.Clients.All.SendAsync("TaskUpdated", task);

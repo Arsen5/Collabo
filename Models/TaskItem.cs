@@ -12,4 +12,5 @@ public class TaskItem
     public DateTime? DueDate { get; set; }
     public Guid? AssigneeId { get; set; }
     public uint RowVersion { get; set; } // Для консистентности
+    public bool IsOverdue => DueDate.HasValue && DueDate < DateTime.UtcNow && Status != "done";
 }

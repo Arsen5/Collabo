@@ -1,10 +1,12 @@
 ﻿// ========== КОНФИГУРАЦИЯ ==========
-const API_URL = "http://localhost:5000/api";
+const API_URL = window.location.origin + "/api";
 let tasks = [];
+let draggedTaskId = null;
 
-// ========== SIGNALR (REAL-TIME) ==========
+// ========== SIGNALR ==========
 const connection = new signalR.HubConnectionBuilder()
-    .withUrl("http://localhost:5000/tasksHub")
+    .withUrl(window.location.origin + "/tasksHub")
+    .withAutomaticReconnect()
     .build();
 
 connection.start()
@@ -28,12 +30,14 @@ async function loadTasks() {
     }
 }
 
-// ========== ОТОБРАЖЕНИЕ ЗАДАЧ ==========
+// ========== ОТОБРАЖЕНИЕ ==========
 function renderTasks() {
     const columns = document.querySelectorAll('.task-list');
     if (columns.length < 3) return;
     
-    columns.forEach(col => col.innerHTML = '');
+    columns[0].innerHTML = '';
+    columns[1].innerHTML = '';
+    columns[2].innerHTML = '';
     
     tasks.forEach(task => {
         const card = createTaskCard(task);
@@ -61,9 +65,16 @@ function createTaskCard(task) {
         : '';
     
     // Дедлайн
-    const dueHtml = task.dueDate 
-        ? `<div class="due-date">📅 ${new Date(task.dueDate).toLocaleDateString()}</div>`
-        : '';
+    const dueDate = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '';
+    const dueHtml = dueDate ? `<div class="due-date">📅 ${dueDate}</div>` : '';
+    
+    // Проверка на просрочку
+    // Проверка на просрочку
+const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+console.log("Задача:", task.title, "Дедлайн:", task.dueDate, "Просрочена?", isOverdue);
+if (isOverdue) {
+    div.classList.add('task-overdue');
+}
     
     div.innerHTML = `
         <div class="task-header">
@@ -84,6 +95,11 @@ function createTaskCard(task) {
         </div>
     `;
     
+    // Добавляем класс просрочки
+    if (isOverdue) {
+        div.classList.add('task-overdue');
+    }
+    
     // Drag & Drop
     div.ondragstart = (e) => {
         e.dataTransfer.setData('text/plain', task.id);
@@ -95,7 +111,7 @@ function createTaskCard(task) {
     return div;
 }
 
-// ========== ПЕРЕМЕЩЕНИЕ ЗАДАЧ ==========
+// ========== ПЕРЕМЕЩЕНИЕ ==========
 async function moveTask(taskId, newStatus) {
     const task = tasks.find(t => t.id === taskId);
     if (!task || task.status === newStatus) return;
@@ -113,7 +129,7 @@ async function moveTask(taskId, newStatus) {
     }
 }
 
-// ========== УДАЛЕНИЕ ЗАДАЧИ ==========
+// ========== УДАЛЕНИЕ ==========
 async function deleteTask(taskId) {
     if (!confirm('Удалить задачу?')) return;
     
@@ -137,8 +153,6 @@ function updateCounters() {
 }
 
 // ========== DRAG & DROP ==========
-let draggedTaskId = null;
-
 function setupDragAndDrop() {
     const columns = document.querySelectorAll('.task-list');
     
@@ -155,7 +169,6 @@ function setupDragAndDrop() {
         column.addEventListener('drop', async (e) => {
             e.preventDefault();
             column.classList.remove('drag-over');
-            
             if (!draggedTaskId) return;
             
             let newStatus = 'todo';
@@ -197,9 +210,11 @@ function resetForm() {
     if (mediumRadio) mediumRadio.checked = true;
 }
 
-// ========== СОЗДАНИЕ ЗАДАЧИ ==========
+// ========== СОЗДАНИЕ ==========
 async function submitTask() {
     const titleInput = document.getElementById('taskTitle');
+    const dueDate = document.getElementById('taskDueDate')?.value || null;
+console.log("Выбранная дата:", dueDate);
     if (!titleInput || !titleInput.value) {
         alert('Введите название задачи');
         return;
@@ -258,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Глобальные функции для HTML
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.submitTask = submitTask;

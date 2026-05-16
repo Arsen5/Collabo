@@ -40,3 +40,8 @@ C:\Users\Ame\Desktop\TaskFlow\Collabo\obj\Debug\net10.0\refint\TaskFlow.dll
 C:\Users\Ame\Desktop\TaskFlow\Collabo\obj\Debug\net10.0\TaskFlow.pdb
 C:\Users\Ame\Desktop\TaskFlow\Collabo\obj\Debug\net10.0\TaskFlow.genruntimeconfig.cache
 C:\Users\Ame\Desktop\TaskFlow\Collabo\obj\Debug\net10.0\ref\TaskFlow.dll
+C:\Users\Ame\Desktop\TaskFlow\Collabo\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.dll
+C:\Users\Ame\Desktop\TaskFlow\Collabo\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\Users\Ame\Desktop\TaskFlow\Collabo\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Relational.dll
+C:\Users\Ame\Desktop\TaskFlow\Collabo\bin\Debug\net10.0\Npgsql.dll
+C:\Users\Ame\Desktop\TaskFlow\Collabo\bin\Debug\net10.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
