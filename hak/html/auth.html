@@ -9,39 +9,19 @@
 	<body>
 		<div class="auth-page">
 			<div class="auth-card">
-				<h1 class="auth-title" id="title">Вход в Collabo</h1>
-
-				<form id="authForm" onsubmit="event.preventDefault(); login();">
+				<h1 class="auth-title">Вход в Collabo</h1>
+				<form onsubmit="event.preventDefault(); window.location.href='MainScreen.html';">
 					<div class="form-group" style="margin-bottom: 16px;">
 						<label class="form-label">Email</label>
-						<input type="email" id="email" class="form-input" placeholder="email@example.com" required="">
+						<input type="email" class="form-input" placeholder="email@example.com" required="">
                 </div>
 					<div class="form-group" style="margin-bottom: 16px;">
 						<label class="form-label">Пароль</label>
-						<input type="password" id="password" class="form-input" placeholder="••••••••" required="">
+						<input type="password" class="form-input" placeholder="••••••••" required="">
                 </div>
 					<button type="submit" class="auth-btn">Войти</button>
 				</form>
-
-				<div class="switch-link" id="switchText">
-					Нет аккаунта? <a href="#" onclick="toggleAuth()">Зарегистрироваться</a>
-				</div>
 			</div>
 		</div>
-
-		<script>
-			function login() {
-			// Пока просто пропускаем (авторизация будет позже)
-			window.location.href = 'MainScreen.html';
-			}
-
-			function toggleAuth() {
-			document.getElementById('title').innerText = 'Регистрация';
-			document.querySelector('form').onsubmit = function(e) {
-			e.preventDefault();
-			alert('Регистрация пока не реализована. Используйте вход.');
-			};
-			}
-		</script>
 	</body>
 </html>

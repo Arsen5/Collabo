@@ -3,7 +3,7 @@ using Collabo.Models;
 using Collabo.Data;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;  // ← ДОБАВИТЬ
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,11 +12,12 @@ builder.Services.AddCors();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Подключение к PostgreSQL
 var connectionString = "Host=localhost; Database=taskflow; Username=postgres; Password=postgres";
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+
 builder.WebHost.UseUrls("http://0.0.0.0:5000");
+
 var app = builder.Build();
 
 app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
@@ -25,7 +26,6 @@ app.UseSwaggerUI();
 
 app.MapHub<TasksHub>("/tasksHub");
 
-// ========== СТАТИЧЕСКИЕ ФАЙЛЫ (FRONTEND) ==========
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
@@ -33,12 +33,18 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = ""
 });
 
-// API
+// ========== API (БЕЗ АВТОРИЗАЦИИ) ==========
 app.MapGet("/api/tasks", async (AppDbContext db) =>
-    await db.Tasks.ToListAsync());
+{
+    var tasks = await db.Tasks.ToListAsync();
+    return Results.Ok(tasks);
+});
 
 app.MapGet("/api/tasks/{id}", async (Guid id, AppDbContext db) =>
-    await db.Tasks.FindAsync(id) is TaskItem task ? Results.Ok(task) : Results.NotFound());
+{
+    var task = await db.Tasks.FindAsync(id);
+    return task is not null ? Results.Ok(task) : Results.NotFound();
+});
 
 app.MapPost("/api/tasks", async (TaskItem task, AppDbContext db, IHubContext<TasksHub> hub) =>
 {
@@ -46,12 +52,9 @@ app.MapPost("/api/tasks", async (TaskItem task, AppDbContext db, IHubContext<Tas
     task.CreatedAt = DateTime.UtcNow;
     task.Tags ??= new List<string>();
 
-    // Преобразование даты в UTC
-    if (task.DueDate.HasValue)
+    if (task.DueDate.HasValue && task.DueDate.Value.Kind != DateTimeKind.Utc)
     {
-        task.DueDate = task.DueDate.Value.Kind == DateTimeKind.Unspecified
-            ? DateTime.SpecifyKind(task.DueDate.Value, DateTimeKind.Utc)
-            : task.DueDate.Value.ToUniversalTime();
+        task.DueDate = task.DueDate.Value.ToUniversalTime();
     }
 
     db.Tasks.Add(task);
@@ -71,7 +74,6 @@ app.MapPut("/api/tasks/{id}", async (Guid id, TaskItem update, AppDbContext db, 
     task.Priority = update.Priority;
     task.Tags = update.Tags ?? new List<string>();
 
-    // Преобразование даты в UTC
     if (update.DueDate.HasValue)
     {
         task.DueDate = update.DueDate.Value.Kind == DateTimeKind.Unspecified
@@ -107,4 +109,4 @@ using (var scope = app.Services.CreateScope())
     Console.WriteLine("✅ База данных PostgreSQL подключена!");
 }
 
-app.Run("http://0.0.0.0:5000");
+app.Run();

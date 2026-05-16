@@ -10,7 +10,7 @@ public class TaskItem
     public List<string> Tags { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime? DueDate { get; set; }
-    public Guid? AssigneeId { get; set; }
+    public string? AssigneeId { get; set; }
     public uint RowVersion { get; set; } // Для консистентности
     public bool IsOverdue => DueDate.HasValue && DueDate < DateTime.UtcNow && Status != "done";
 }

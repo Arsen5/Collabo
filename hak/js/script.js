@@ -16,6 +16,39 @@ connection.start()
 connection.on("TaskCreated", () => loadTasks());
 connection.on("TaskUpdated", () => loadTasks());
 connection.on("TaskDeleted", () => loadTasks());
+connection.on("Notification", (message) => {
+    showToast(message);
+});
+
+// ========== УВЕДОМЛЕНИЯ ==========
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.innerHTML = `🔔 ${message}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #1a1a2e;
+        color: #eee;
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 9999;
+        animation: slideIn 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+`;
+document.head.appendChild(style);
 
 // ========== ЗАГРУЗКА ЗАДАЧ ==========
 async function loadTasks() {
@@ -53,28 +86,23 @@ function createTaskCard(task) {
     div.setAttribute('data-id', task.id);
     div.setAttribute('draggable', 'true');
     
-    // Класс приоритета
+    if (task.tags && task.tags.includes('urgent') && task.priority !== 'high') {
+        task.priority = 'high';
+    }
+    
     let priorityClass = '';
     if (task.priority === 'high') priorityClass = 'priority-high';
     else if (task.priority === 'medium') priorityClass = 'priority-medium';
     else if (task.priority === 'low') priorityClass = 'priority-low';
     
-    // Теги
     const tagsHtml = task.tags?.length 
         ? `<div class="task-tags">${task.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>`
         : '';
     
-    // Дедлайн
     const dueDate = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '';
     const dueHtml = dueDate ? `<div class="due-date">📅 ${dueDate}</div>` : '';
     
-    // Проверка на просрочку
-    // Проверка на просрочку
-const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
-console.log("Задача:", task.title, "Дедлайн:", task.dueDate, "Просрочена?", isOverdue);
-if (isOverdue) {
-    div.classList.add('task-overdue');
-}
+    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
     
     div.innerHTML = `
         <div class="task-header">
@@ -95,12 +123,10 @@ if (isOverdue) {
         </div>
     `;
     
-    // Добавляем класс просрочки
     if (isOverdue) {
         div.classList.add('task-overdue');
     }
     
-    // Drag & Drop
     div.ondragstart = (e) => {
         e.dataTransfer.setData('text/plain', task.id);
         draggedTaskId = task.id;
@@ -111,7 +137,6 @@ if (isOverdue) {
     return div;
 }
 
-// ========== ПЕРЕМЕЩЕНИЕ ==========
 async function moveTask(taskId, newStatus) {
     const task = tasks.find(t => t.id === taskId);
     if (!task || task.status === newStatus) return;
@@ -129,7 +154,6 @@ async function moveTask(taskId, newStatus) {
     }
 }
 
-// ========== УДАЛЕНИЕ ==========
 async function deleteTask(taskId) {
     if (!confirm('Удалить задачу?')) return;
     
@@ -142,7 +166,6 @@ async function deleteTask(taskId) {
     }
 }
 
-// ========== СЧЁТЧИКИ ==========
 function updateCounters() {
     const badges = document.querySelectorAll('.badge');
     if (badges.length >= 3) {
@@ -152,7 +175,6 @@ function updateCounters() {
     }
 }
 
-// ========== DRAG & DROP ==========
 function setupDragAndDrop() {
     const columns = document.querySelectorAll('.task-list');
     
@@ -181,7 +203,6 @@ function setupDragAndDrop() {
     });
 }
 
-// ========== МОДАЛЬНОЕ ОКНО ==========
 function openModal() {
     const modal = document.getElementById('taskModal');
     if (modal) modal.classList.add('active');
@@ -210,11 +231,8 @@ function resetForm() {
     if (mediumRadio) mediumRadio.checked = true;
 }
 
-// ========== СОЗДАНИЕ ==========
 async function submitTask() {
     const titleInput = document.getElementById('taskTitle');
-    const dueDate = document.getElementById('taskDueDate')?.value || null;
-console.log("Выбранная дата:", dueDate);
     if (!titleInput || !titleInput.value) {
         alert('Введите название задачи');
         return;
@@ -223,11 +241,17 @@ console.log("Выбранная дата:", dueDate);
     const tagsStr = document.getElementById('taskTags')?.value || '';
     const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(t => t) : [];
     
+    let priority = document.querySelector('input[name="priority"]:checked')?.value || 'medium';
+    if (tags.includes('urgent')) {
+        priority = 'high';
+        showToast("🔴 Тег 'urgent'! Приоритет повышен до HIGH");
+    }
+    
     const newTask = {
         title: titleInput.value,
         description: document.getElementById('taskDesc')?.value || '',
         status: document.getElementById('taskStatus')?.value || 'todo',
-        priority: document.querySelector('input[name="priority"]:checked')?.value || 'medium',
+        priority: priority,
         tags: tags,
         dueDate: document.getElementById('taskDueDate')?.value || null
     };
@@ -242,6 +266,7 @@ console.log("Выбранная дата:", dueDate);
         if (response.ok) {
             closeModal();
             resetForm();
+            await loadTasks();
         } else {
             alert('Ошибка при создании задачи');
         }
@@ -251,7 +276,6 @@ console.log("Выбранная дата:", dueDate);
     }
 }
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ==========
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -259,7 +283,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Страница загружена");
     loadTasks();
