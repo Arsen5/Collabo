@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen();
 var connectionString = "Host=localhost; Database=taskflow; Username=postgres; Password=postgres";
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
-builder.WebHost.UseUrls("http://localhost:5000");
+builder.WebHost.UseUrls("http://0.0.0.0:5000");
 var app = builder.Build();
 
 app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
@@ -87,4 +87,4 @@ using (var scope = app.Services.CreateScope())
     Console.WriteLine("✅ База данных PostgreSQL подключена!");
 }
 
-app.Run("http://localhost:5000");
+app.Run("http://0.0.0.0:5000");
