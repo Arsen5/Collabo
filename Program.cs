@@ -1,11 +1,9 @@
-using Collabo.Consumers;
 using Collabo.Hubs;
 using Collabo.Models;
-using Collabo.Events;
-using MassTransit;
+using Collabo.Data;
 using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
-using Microsoft.Extensions.FileProviders;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;  // ← ДОБАВИТЬ
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,22 +12,11 @@ builder.Services.AddCors();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ========== RABBITMQ (MassTransit) ==========
-builder.Services.AddMassTransit(x =>
-{
-    x.AddConsumer<TaskDeletedConsumer>();
-
-    x.UsingRabbitMq((context, cfg) =>
-    {
-        cfg.Host("localhost", "/", h =>
-        {
-            h.Username("guest");
-            h.Password("guest");
-        });
-        cfg.ConfigureEndpoints(context);
-    });
-});
-
+// Подключение к PostgreSQL
+var connectionString = "Host=localhost; Database=taskflow; Username=postgres; Password=postgres";
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+builder.WebHost.UseUrls("http://localhost:5000");
 var app = builder.Build();
 
 app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
@@ -38,7 +25,7 @@ app.UseSwaggerUI();
 
 app.MapHub<TasksHub>("/tasksHub");
 
-// ========== РАЗДАЁМ СТАТИЧЕСКИЕ ФАЙЛЫ (FRONTEND) ==========
+// ========== СТАТИЧЕСКИЕ ФАЙЛЫ (FRONTEND) ==========
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
@@ -46,52 +33,58 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = ""
 });
 
-// Хранилище задач
-var tasks = new ConcurrentDictionary<Guid, TaskItem>();
-
-// Тестовая задача
-var testTask = new TaskItem
-{
-    Id = Guid.NewGuid(),
-    Title = "Тестовая задача",
-    Status = "todo",
-    Priority = "medium",
-    CreatedAt = DateTime.UtcNow,
-    Tags = new List<string>()
-};
-tasks[testTask.Id] = testTask;
-
 // API
-app.MapGet("/api/tasks", () => tasks.Values);
+app.MapGet("/api/tasks", async (AppDbContext db) =>
+    await db.Tasks.ToListAsync());
 
-app.MapGet("/api/tasks/{id}", (Guid id) =>
-    tasks.TryGetValue(id, out var task) ? Results.Ok(task) : Results.NotFound());
+app.MapGet("/api/tasks/{id}", async (Guid id, AppDbContext db) =>
+    await db.Tasks.FindAsync(id) is TaskItem task ? Results.Ok(task) : Results.NotFound());
 
-app.MapPost("/api/tasks", async (TaskItem task, IHubContext<TasksHub> hub) =>
+app.MapPost("/api/tasks", async (TaskItem task, AppDbContext db, IHubContext<TasksHub> hub) =>
 {
     task.Id = Guid.NewGuid();
     task.CreatedAt = DateTime.UtcNow;
-    tasks[task.Id] = task;
+    task.Tags ??= new List<string>();
+    db.Tasks.Add(task);
+    await db.SaveChangesAsync();
     await hub.Clients.All.SendAsync("TaskCreated", task);
     return Results.Ok(task);
 });
 
-app.MapPut("/api/tasks/{id}", async (Guid id, TaskItem update, IHubContext<TasksHub> hub) =>
+app.MapPut("/api/tasks/{id}", async (Guid id, TaskItem update, AppDbContext db, IHubContext<TasksHub> hub) =>
 {
-    if (!tasks.ContainsKey(id)) return Results.NotFound();
-    update.Id = id;
-    tasks[id] = update;
-    await hub.Clients.All.SendAsync("TaskUpdated", update);
-    return Results.Ok(update);
+    var task = await db.Tasks.FindAsync(id);
+    if (task is null) return Results.NotFound();
+
+    task.Title = update.Title;
+    task.Description = update.Description;
+    task.Status = update.Status;
+    task.Priority = update.Priority;
+    task.Tags = update.Tags ?? new List<string>();
+    task.DueDate = update.DueDate;
+
+    await db.SaveChangesAsync();
+    await hub.Clients.All.SendAsync("TaskUpdated", task);
+    return Results.Ok(task);
 });
 
-app.MapDelete("/api/tasks/{id}", async (Guid id, IHubContext<TasksHub> hub, IPublishEndpoint publishEndpoint) =>
+app.MapDelete("/api/tasks/{id}", async (Guid id, AppDbContext db, IHubContext<TasksHub> hub) =>
 {
-    if (!tasks.ContainsKey(id)) return Results.NotFound();
-    tasks.TryRemove(id, out _);
+    var task = await db.Tasks.FindAsync(id);
+    if (task is null) return Results.NotFound();
+
+    db.Tasks.Remove(task);
+    await db.SaveChangesAsync();
     await hub.Clients.All.SendAsync("TaskDeleted", id);
-    await publishEndpoint.Publish(new TaskDeletedEvent { TaskId = id });
     return Results.Ok();
 });
 
-app.Run();
+// Создание таблиц при запуске
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.EnsureCreatedAsync();
+    Console.WriteLine("✅ База данных PostgreSQL подключена!");
+}
+
+app.Run("http://localhost:5000");
