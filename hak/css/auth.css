@@ -1,0 +1,87 @@
+/* auth.css */
+
+/* Сбрасываем стили, чтобы ничего не прижималось к краям */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, sans-serif;
+}
+
+body {
+    display: flex;
+    align-items: center; /* Центрирует по вертикали */
+    justify-content: center; /* Центрирует по горизонтали */
+    height: 100vh;
+    background-color: #f8fafc;
+    color: #1e293b;
+}
+
+.auth-card {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+.auth-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+/* Дублируем стили полей ввода, чтобы они были красивыми */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+}
+
+    .form-input:focus {
+        border-color: #6366f1;
+    }
+
+.auth-btn {
+    width: 100%;
+    background: #6366f1;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    margin-top: 10px;
+}
+
+    .auth-btn:hover {
+        background: #4f46e5;
+    }
+
+.switch-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 14px;
+    color: #64748b;
+}
+
+    .switch-link a {
+        color: #6366f1;
+        font-weight: 600;
+        text-decoration: none;
+    }

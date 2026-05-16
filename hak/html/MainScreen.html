@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collabo - Minimal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-top">
+            <div class="logo">
+                Collabo
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-link active">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    My Board
+                </a>
+                <a href="#" class="nav-link">
+                    <span class="material-symbols-outlined">add_box</span>
+                    Создать доску
+                </a>
+            </nav>
+        </div>
+        <div class="sidebar-bottom">
+            <a href="#" class="nav-link">
+                <span class="material-symbols-outlined">logout</span>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title">Основная доска</h1>
+            </div>
+            <div class="header-right">
+                <div class="avatar">A</div>
+            </div>
+        </header>
+
+        <div class="board-wrapper">
+            <div class="board">
+                <div class="column">
+                    <div class="column-header">
+                        <h2>К исполнению <span class="badge badge-gray">0</span></h2>
+                    </div>
+                    <div class="task-list"></div>
+                    <button class="add-task-btn" onclick="openModal()">+ Добавить задачу</button>
+                </div>
+                <div class="column">
+                    <div class="column-header">
+                        <h2>В работе <span class="badge badge-blue">0</span></h2>
+                    </div>
+                    <div class="task-list"></div>
+                    <button class="add-task-btn" onclick="openModal()">+ Добавить задачу</button>
+                </div>
+                <div class="column column-done">
+                    <div class="column-header">
+                        <h2>Готово <span class="badge badge-green">0</span></h2>
+                    </div>
+                    <div class="task-list"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="taskModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div><h2 class="modal-title">Новая задача</h2></div>
+                <button class="close-modal-btn" onclick="closeModal()"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Название задачи <span class="required">*</span></label>
+                    <input type="text" id="taskTitle" class="form-input" placeholder="Например: Подготовить отчет по KPI">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-textarea" rows="3" placeholder="Добавьте подробности..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group w-50">
+                        <label class="form-label">Статус</label>
+                        <div class="select-wrapper">
+                            <select class="form-select">
+                                <option selected>К исполнению</option>
+                                <option>В работе</option>
+                                <option>Готово</option>
+                            </select>
+                            <span class="material-symbols-outlined select-icon">expand_more</span>
+                        </div>
+                    </div>
+                    <div class="form-group w-50">
+                        <label class="form-label">Приоритет</label>
+                        <div class="radio-group">
+                            <label class="radio-label"><input type="radio" name="priority" value="low"> Низкий</label>
+                            <label class="radio-label"><input type="radio" name="priority" value="medium" checked> Средний</label>
+                            <label class="radio-label"><input type="radio" name="priority" value="high"> Высокий</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group w-50">
+                        <label class="form-label">Срок выполнения</label>
+                        <input type="date" class="form-input">
+                    </div>
+                    <div class="form-group w-50">
+                        <label class="form-label">Исполнитель</label>
+                        <div class="select-wrapper">
+                            <select class="form-select">
+                                <option value="" disabled selected>Выберите сотрудника...</option>
+                                <option>Анна Смирнова (Вы)</option>
+                                <option>Дмитрий Иванов</option>
+                            </select>
+                            <span class="material-symbols-outlined select-icon">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Теги</label>
+                    <input type="text" class="form-input" placeholder="Например: KPI, Финансы">
+                    <span class="form-hint">Введите через запятую</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+				<button class="btn-primary" onclick="submitTask()">Создать</button>
+            </div>
+        </div>
+    </div>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.js"></script>
+	<script src="../js/script.js"></script>
+</body>
+</html>
