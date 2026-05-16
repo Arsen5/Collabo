@@ -1,11 +1,11 @@
 using Collabo.Consumers;
 using Collabo.Hubs;
 using Collabo.Models;
-using Collabo.Services;
 using Collabo.Events;
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,11 +38,19 @@ app.UseSwaggerUI();
 
 app.MapHub<TasksHub>("/tasksHub");
 
+// ========== РАЗДАЁМ СТАТИЧЕСКИЕ ФАЙЛЫ (FRONTEND) ==========
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "hak")),
+    RequestPath = ""
+});
+
 // Хранилище задач
 var tasks = new ConcurrentDictionary<Guid, TaskItem>();
 
 // Тестовая задача
-tasks[Guid.NewGuid()] = new TaskItem
+var testTask = new TaskItem
 {
     Id = Guid.NewGuid(),
     Title = "Тестовая задача",
@@ -51,6 +59,7 @@ tasks[Guid.NewGuid()] = new TaskItem
     CreatedAt = DateTime.UtcNow,
     Tags = new List<string>()
 };
+tasks[testTask.Id] = testTask;
 
 // API
 app.MapGet("/api/tasks", () => tasks.Values);
@@ -86,4 +95,3 @@ app.MapDelete("/api/tasks/{id}", async (Guid id, IHubContext<TasksHub> hub, IPub
 });
 
 app.Run();
-
