@@ -1,36 +1,106 @@
 ﻿<!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collabo - Вход</title>
-    <!-- Стили только для страницы авторизации -->
-    <link rel="stylesheet" href="../css/auth.css">
+	<head>
+		<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>Collabo - Вход</title>
+				<link rel="stylesheet" href="../css/auth.css">
 </head>
-<body>
+	<body>
+		<div class="auth-page">
+			<div class="auth-card">
+				<h1 class="auth-title" id="title">Вход в Collabo</h1>
 
-    <div class="auth-page">
-        <div class="auth-card">
-            <h1 class="auth-title" id="title">Вход в Collabo</h1>
-
-            <form id="authForm" onsubmit="event.preventDefault(); window.location.href='create-board.html';">
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" placeholder="email@example.com" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label class="form-label">Пароль</label>
-                    <input type="password" class="form-input" placeholder="••••••••" required>
-                </div>
-                <button type="submit" class="auth-btn">Войти</button>
-            </form>
-
-            <div class="switch-link" id="switchText">
-                Нет аккаунта? <a href="#" onclick="toggleAuth()">Зарегистрироваться</a>
+				<div id="fullNameGroup" style="display: none; margin-bottom: 16px;">
+					<label class="form-label">Имя</label>
+					<input type="text" id="fullName" class="form-input" placeholder="Иван Иванов">
             </div>
-        </div>
-    </div>
 
-    <script src="../js/auth-script.js"></script>
-</body>
+				<div class="form-group" style="margin-bottom: 16px;">
+					<label class="form-label">Email</label>
+					<input type="email" id="email" class="form-input" placeholder="email@example.com" required="">
+            </div>
+
+				<div class="form-group" style="margin-bottom: 16px;">
+					<label class="form-label">Пароль</label>
+					<input type="password" id="password" class="form-input" placeholder="••••••••" required="">
+            </div>
+
+				<button id="submitBtn" class="auth-btn">Войти</button>
+
+				<div class="switch-link" id="switchText">
+					Нет аккаунта? <a href="#" id="switchLink">Зарегистрироваться</a>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			let isLogin = true;
+
+			function toggleAuth() {
+			isLogin = !isLogin;
+			const title = document.getElementById('title');
+			const fullNameGroup = document.getElementById('fullNameGroup');
+			const submitBtn = document.getElementById('submitBtn');
+			const switchText = document.getElementById('switchText');
+
+			if (isLogin) {
+			title.innerText = 'Вход в Collabo';
+			fullNameGroup.style.display = 'none';
+			submitBtn.innerText = 'Войти';
+			switchText.innerHTML = 'Нет аккаунта? <a href="#" id="switchLink">Зарегистрироваться</a>';
+			} else {
+			title.innerText = 'Регистрация в Collabo';
+			fullNameGroup.style.display = 'block';
+			submitBtn.innerText = 'Зарегистрироваться';
+			switchText.innerHTML = 'Уже есть аккаунт? <a href="#" id="switchLink">Войти</a>';
+			}
+			document.getElementById('switchLink').addEventListener('click', (e) => {
+			e.preventDefault();
+			toggleAuth();
+			});
+			}
+
+			document.getElementById('switchLink').addEventListener('click', (e) => {
+			e.preventDefault();
+			toggleAuth();
+			});
+
+			document.getElementById('submitBtn').addEventListener('click', async () => {
+			const email = document.getElementById('email').value;
+			const password = document.getElementById('password').value;
+
+			if (isLogin) {
+			const res = await fetch('/api/auth/login', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ email, password })
+			});
+			if (res.ok) {
+			const data = await res.json();
+			localStorage.setItem('token', data.token);
+			localStorage.setItem('userId', data.userId);
+			localStorage.setItem('userName', data.userName);
+			window.location.href = 'board.html';
+			} else {
+			alert('Неверный email или пароль');
+			}
+			} else {
+			const fullName = document.getElementById('fullName').value;
+			const res = await fetch('/api/auth/register', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ email, password, fullName })
+			});
+			if (res.ok) {
+			alert('Регистрация успешна! Теперь войдите.');
+			toggleAuth();
+			} else {
+			const error = await res.text();
+			alert('Ошибка: ' + error);
+			}
+			}
+			});
+		</script>
+	</body>
 </html>

@@ -53,19 +53,21 @@
 		<script src="../js/sidebar-navigation.js"></script>
 
 		<script>
-			// Принудительная установка заголовка (через setTimeout для переопределения)
-			setTimeout(() => {
+			// Устанавливаем заголовок
 			const titleEl = document.querySelector('.top-bar h1');
 			if (titleEl) titleEl.textContent = 'Создание доски';
-			const pageTitleEl = document.getElementById('pageTitle');
-			if (pageTitleEl) pageTitleEl.textContent = 'Создание доски';
-			}, 50);
 
 			// Создание доски
 			document.getElementById('createBoardBtn').addEventListener('click', async () => {
 			const boardName = document.getElementById('boardNameInput').value.trim();
 			if (!boardName) {
 			alert('Введите название доски');
+			return;
+			}
+
+			if (typeof createBoardOnServer === 'undefined') {
+			console.error('createBoardOnServer не определён');
+			alert('Ошибка: скрипты не загружены. Обновите страницу');
 			return;
 			}
 

@@ -1,12 +1,28 @@
 // ========== УПРАВЛЕНИЕ ДОСКАМИ ==========
 const API_URL = "http://localhost:5000/api";
 
+// Функция для fetch с авторизацией (токен берётся из глобальной области)
+async function authFetch(url, options = {}) {
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers
+    };
+    const response = await fetch(url, { ...options, headers });
+    if (response.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = 'auth.html';
+    }
+    return response;
+}
+
 let currentBoardId = null;
 let allBoards = [];
 
 async function loadBoardsFromServer() {
     try {
-        const response = await fetch(`${API_URL}/boards`);
+        const response = await authFetch(`${API_URL}/boards`);
         if (!response.ok) throw new Error('Ошибка загрузки досок');
         allBoards = await response.json();
         return allBoards;
@@ -18,7 +34,7 @@ async function loadBoardsFromServer() {
 
 async function createBoardOnServer(name, description = '') {
     try {
-        const response = await fetch(`${API_URL}/boards`, {
+        const response = await authFetch(`${API_URL}/boards`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, description })
@@ -48,7 +64,6 @@ async function renderBoardsMenu() {
     
     currentBoardId = localStorage.getItem('collabo_current_board_id');
     
-    // Проверяем, есть ли текущая доска в списке
     if (!allBoards.find(b => b.id === currentBoardId) && allBoards.length > 0) {
         currentBoardId = allBoards[0].id;
         localStorage.setItem('collabo_current_board_id', currentBoardId);
@@ -101,7 +116,7 @@ async function renderBoardsMenu() {
             e.stopPropagation();
             if (confirm(`Удалить доску "${board.name}" со всеми задачами?`)) {
                 try {
-                    await fetch(`${API_URL}/boards/${board.id}`, { method: 'DELETE' });
+                    await authFetch(`${API_URL}/boards/${board.id}`, { method: 'DELETE' });
                     window.location.href = 'board.html';
                 } catch (error) {
                     console.error('Ошибка удаления:', error);
@@ -120,7 +135,6 @@ async function renderBoardsMenu() {
         }
     });
     
-    // ========== ОБНОВЛЯЕМ ЗАГОЛОВОК ТОЛЬКО НА СТРАНИЦЕ board.html ==========
     if (isBoardPage) {
         const currentBoard = allBoards.find(b => b.id === currentBoardId);
         const topBarTitle = document.querySelector('.top-bar h1');
@@ -128,7 +142,6 @@ async function renderBoardsMenu() {
             topBarTitle.textContent = currentBoard.name;
         }
     }
-    // ========================================================================
 }
 
 document.addEventListener('DOMContentLoaded', () => {

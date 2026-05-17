@@ -2,6 +2,25 @@
 window.API_URL = window.location.origin + "/api";
 console.log('API_URL установлен:', window.API_URL);
 
+// Получаем токен
+const token = localStorage.getItem('token');
+
+// Функция для fetch с авторизацией
+async function authFetch(url, options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers
+    };
+    
+    const response = await fetch(url, { ...options, headers });
+    if (response.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = 'auth.html';
+    }
+    return response;
+}
+
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -106,7 +125,7 @@ async function renderTasksForBoard(boardId) {
     console.log('🔄 Загрузка задач для доски:', boardId);
     
     try {
-        const response = await fetch(`${window.API_URL}/boards/${boardId}/tasks`);
+        const response = await authFetch(`${window.API_URL}/boards/${boardId}/tasks`);
         if (!response.ok) throw new Error('Ошибка загрузки задач');
         currentTasks = await response.json();
         
@@ -123,7 +142,7 @@ async function createTaskAPI(taskData) {
     const currentBoardId = getCurrentBoardId();
     let formattedDueDate = taskData.dueDate ? new Date(taskData.dueDate).toISOString() : null;
     
-    const response = await fetch(`${window.API_URL}/tasks`, {
+    const response = await authFetch(`${window.API_URL}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -142,7 +161,7 @@ async function createTaskAPI(taskData) {
 }
 
 async function deleteTaskAPI(taskId) {
-    const response = await fetch(`${window.API_URL}/tasks/${taskId}`, {
+    const response = await authFetch(`${window.API_URL}/tasks/${taskId}`, {
         method: 'DELETE'
     });
     if (!response.ok) throw new Error('Ошибка удаления');
@@ -150,10 +169,10 @@ async function deleteTaskAPI(taskId) {
 }
 
 async function updateTaskStatus(taskId, newStatus) {
-    const getResponse = await fetch(`${window.API_URL}/tasks/${taskId}`);
+    const getResponse = await authFetch(`${window.API_URL}/tasks/${taskId}`);
     const task = await getResponse.json();
     task.status = newStatus;
-    await fetch(`${window.API_URL}/tasks/${taskId}`, {
+    await authFetch(`${window.API_URL}/tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(task)
