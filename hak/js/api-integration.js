@@ -59,6 +59,42 @@ function getCurrentBoardId() {
     return localStorage.getItem('collabo_current_board_id');
 }
 
+// ========== ФИЛЬТРАЦИЯ ==========
+let currentTasks = [];
+let filterSearch = '';
+let filterPriority = 'all';
+let filterStatus = 'all';
+
+function filterTasks(tasks) {
+    return tasks.filter(task => {
+        const matchesSearch = filterSearch === '' || task.title.toLowerCase().includes(filterSearch.toLowerCase());
+        const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
+        let statusMatch = filterStatus === 'all';
+        if (filterStatus === 'todo') statusMatch = task.status === 'todo';
+        else if (filterStatus === 'progress') statusMatch = task.status === 'progress';
+        else if (filterStatus === 'done') statusMatch = task.status === 'done';
+        
+        return matchesSearch && matchesPriority && statusMatch;
+    });
+}
+
+function renderFilteredTasks(tasks) {
+    const columns = document.querySelectorAll('.column');
+    columns.forEach(col => {
+        col.querySelectorAll('.task-card').forEach(card => card.remove());
+    });
+    
+    tasks.forEach(task => {
+        let columnTitle = task.status === 'progress' ? 'In Progress' : task.status === 'done' ? 'Done' : 'To-Do';
+        const column = Array.from(columns).find(col => col.querySelector('.column-title').textContent.trim() === columnTitle);
+        if (column) {
+            const card = createTaskCard(task);
+            const addBtn = column.querySelector('.add-task-btn');
+            addBtn ? column.insertBefore(card, addBtn) : column.appendChild(card);
+        }
+    });
+}
+
 async function renderTasksForBoard(boardId) {
     if (!boardId) {
         console.warn('Нет boardId для загрузки задач');
@@ -68,26 +104,14 @@ async function renderTasksForBoard(boardId) {
     console.log('🔄 Загрузка задач для доски:', boardId);
     
     try {
-        const response = await fetch(`${API_URL}/boards/${boardId}/tasks`);
+        const response = await fetch(`${window.API_URL}/boards/${boardId}/tasks`);
         if (!response.ok) throw new Error('Ошибка загрузки задач');
-        const tasks = await response.json();
+        currentTasks = await response.json();
         
-        const columns = document.querySelectorAll('.column');
-        columns.forEach(col => {
-            col.querySelectorAll('.task-card').forEach(card => card.remove());
-        });
+        const filtered = filterTasks(currentTasks);
+        renderFilteredTasks(filtered);
         
-        tasks.forEach(task => {
-            let columnTitle = task.status === 'progress' ? 'In Progress' : task.status === 'done' ? 'Done' : 'To-Do';
-            const column = Array.from(columns).find(col => col.querySelector('.column-title').textContent.trim() === columnTitle);
-            if (column) {
-                const addBtn = column.querySelector('.add-task-btn');
-                const card = createTaskCard(task);
-                addBtn ? column.insertBefore(card, addBtn) : column.appendChild(card);
-            }
-        });
-        
-        console.log(`✅ Отображено ${tasks.length} задач для доски ${boardId}`);
+        console.log(`✅ Отображено ${filtered.length} задач из ${currentTasks.length} для доски ${boardId}`);
     } catch (error) {
         console.error('Ошибка загрузки задач для доски:', error);
     }
@@ -97,7 +121,7 @@ async function createTaskAPI(taskData) {
     const currentBoardId = getCurrentBoardId();
     let formattedDueDate = taskData.dueDate ? new Date(taskData.dueDate).toISOString() : null;
     
-    const response = await fetch(`${API_URL}/tasks`, {
+    const response = await fetch(`${window.API_URL}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -115,7 +139,7 @@ async function createTaskAPI(taskData) {
 }
 
 async function deleteTaskAPI(taskId) {
-    const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+    const response = await fetch(`${window.API_URL}/tasks/${taskId}`, {
         method: 'DELETE'
     });
     if (!response.ok) throw new Error('Ошибка удаления');
@@ -123,10 +147,10 @@ async function deleteTaskAPI(taskId) {
 }
 
 async function updateTaskStatus(taskId, newStatus) {
-    const getResponse = await fetch(`${API_URL}/tasks/${taskId}`);
+    const getResponse = await fetch(`${window.API_URL}/tasks/${taskId}`);
     const task = await getResponse.json();
     task.status = newStatus;
-    await fetch(`${API_URL}/tasks/${taskId}`, {
+    await fetch(`${window.API_URL}/tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(task)
@@ -268,13 +292,87 @@ const style = document.createElement('style');
 style.textContent = `@keyframes fadeInOut{0%{opacity:0;transform:translateX(100%)}10%{opacity:1;transform:translateX(0)}90%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(100%)}}`;
 document.head.appendChild(style);
 
+function exportToJSON() {
+    const data = JSON.stringify(currentTasks, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `board_export_${new Date().toISOString()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportToCSV() {
+    if (!currentTasks || !currentTasks.length) {
+        alert('Нет задач для экспорта');
+        return;
+    }
+    
+    // Заголовки
+    const headers = ['ID', 'Название', 'Описание', 'Статус', 'Приоритет', 'Теги', 'Дедлайн', 'Создана'];
+    
+    // Данные
+    const rows = currentTasks.map(task => [
+        task.id,
+        `"${(task.title || '').replace(/"/g, '""')}"`,
+        `"${(task.description || '').replace(/"/g, '""')}"`,
+        task.status === 'todo' ? 'К исполнению' : task.status === 'progress' ? 'В работе' : 'Готово',
+        task.priority === 'high' ? 'Высокий' : task.priority === 'medium' ? 'Средний' : 'Низкий',
+        `"${(task.tags || []).join(', ')}"`,
+        task.dueDate || '',
+        new Date(task.createdAt).toLocaleString()
+    ]);
+    
+    // Собираем CSV с разделителем-точкой с запятой (для русской версии Excel)
+    const csvContent = [headers, ...rows].map(row => row.join(';')).join('\n');
+    
+    // Добавляем BOM для корректной кодировки
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `board_export_${new Date().toISOString()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', async () => {
     initSignalR();
+    setupDragAndDrop();
+    
     const boardId = getCurrentBoardId();
     if (boardId) {
         await renderTasksForBoard(boardId);
     }
-    setupDragAndDrop();
+    
+    // Фильтры
+    const searchInput = document.getElementById('searchInput');
+    const priorityFilter = document.getElementById('priorityFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            filterSearch = e.target.value;
+            const boardId = getCurrentBoardId();
+            if (boardId) renderTasksForBoard(boardId);
+        });
+    }
+    if (priorityFilter) {
+        priorityFilter.addEventListener('change', (e) => {
+            filterPriority = e.target.value;
+            const boardId = getCurrentBoardId();
+            if (boardId) renderTasksForBoard(boardId);
+        });
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', (e) => {
+            filterStatus = e.target.value;
+            const boardId = getCurrentBoardId();
+            if (boardId) renderTasksForBoard(boardId);
+        });
+    }
 });
 
 document.addEventListener('click', (e) => {

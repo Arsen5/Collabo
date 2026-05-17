@@ -1,300 +1,313 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Доска</title>
-    <link rel="stylesheet" href="../css/style.css">
-</head>
-<body>
+	<head>
+		<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>Доска</title>
+				<link rel="stylesheet" href="../css/style.css">
+					<style>
+						.filter-bar {
+						display: flex;
+						gap: 15px;
+						padding: 10px 20px;
+						background: #fff;
+						border-bottom: 1px solid #e0e0e0;
+						flex-wrap: wrap;
+						align-items: center;
+						}
+						.filter-bar input, .filter-bar select {
+						padding: 8px;
+						border-radius: 6px;
+						border: 1px solid #ccc;
+						font-size: 14px;
+						}
+						.filter-bar input {
+						width: 200px;
+						}
+						.export-btn {
+						background: #4f46e5;
+						color: white;
+						border: none;
+						padding: 8px 16px;
+						border-radius: 6px;
+						cursor: pointer;
+						}
+						.export-btn:hover {
+						background: #6366f1;
+						}
+						.export-dropdown {
+						position: relative;
+						display: inline-block;
+						}
+						.export-menu {
+						display: none;
+						position: absolute;
+						right: 0;
+						top: 100%;
+						background: white;
+						border: 1px solid #ccc;
+						border-radius: 6px;
+						z-index: 100;
+						min-width: 150px;
+						box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+						}
+						.export-menu div {
+						padding: 8px 12px;
+						cursor: pointer;
+						}
+						.export-menu div:hover {
+						background-color: #f0f0f0;
+						}
+						.export-menu div:first-child {
+						border-radius: 6px 6px 0 0;
+						}
+						.export-menu div:last-child {
+						border-radius: 0 0 6px 6px;
+						border-top: 1px solid #eee;
+						}
+					</style>
+				</head>
+	<body>
 
-    <div class="container">
-        <!-- ЛЕВЫЙ САЙДБАР (ФИКСИРОВАННЫЙ) -->
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div class="logo">Collabo</div>
-                <div class="menu">
-                    <!-- Сюда наш новый скрипт сам подставит список досок из памяти -->
-					<a href="create-board.html" class="menu-item">+ Создать доску</a>
-                </div>
+		<div class="container">
+			<!-- ЛЕВЫЙ САЙДБАР -->
+			<aside class="sidebar">
+				<div class="sidebar-top">
+					<div class="logo">Collabo</div>
+					<div class="menu">
+						<a href="create-board.html" class="menu-item">+ Создать доску</a>
+					</div>
+				</div>
+				<div class="sidebar-bottom">
+					<a href="auth.html" class="btn-logout" style="text-decoration: none; display: block;">Выйти</a>
+				</div>
+			</aside>
+
+			<!-- ЦЕНТРАЛЬНАЯ ОБЛАСТЬ -->
+			<main class="main-content">
+				<header class="top-bar">
+					<h1>Название доски</h1>
+					<div class="avatar">A</div>
+				</header>
+
+				<!-- ФИЛЬТРАЦИЯ И ЭКСПОРТ -->
+				<div class="filter-bar">
+					<input type="text" id="searchInput" placeholder="🔍 Поиск задач...">
+						<select id="priorityFilter">
+							<option value="all">Все приоритеты</option>
+							<option value="high">Высокий</option>
+							<option value="medium">Средний</option>
+							<option value="low">Низкий</option>
+						</select>
+						<select id="statusFilter">
+							<option value="all">Все статусы</option>
+							<option value="todo">К исполнению</option>
+							<option value="progress">В работе</option>
+							<option value="done">Готово</option>
+						</select>
+
+						<div class="export-dropdown">
+							<button id="exportBtn" class="export-btn">📎 Экспорт ▼</button>
+							<div id="exportMenu" class="export-menu">
+								<div onclick="exportToJSON()">📄 Экспорт в JSON</div>
+								<div onclick="exportToCSV()">📊 Экспорт в CSV</div>
+							</div>
+						</div>
+					</div>
+
+				<div class="board-area">
+					<div class="board-columns-container">
+						<div class="column">
+							<div class="column-header">
+								<span class="column-title">To-Do</span>
+								<span class="column-edit">Изменить</span>
+							</div>
+							<button class="add-task-btn">+ Добавить задачу</button>
+						</div>
+						<div class="column">
+							<div class="column-header">
+								<span class="column-title">In Progress</span>
+								<span class="column-edit">Изменить</span>
+							</div>
+							<button class="add-task-btn">+ Добавить задачу</button>
+						</div>
+						<div class="column">
+							<div class="column-header">
+								<span class="column-title">Done</span>
+								<span class="column-edit">Изменить</span>
+							</div>
+						</div>
+					</div>
+					<div class="board-actions">
+						<span id="open-add-column-btn" class="action-light">Добавить новый столбец</span>
+						<span id="open-board-params-btn" class="action-bold">Параметры доски</span>
+					</div>
+				</div>
+			</main>
+		</div>
+
+		<!-- ПРАВАЯ ПАНЕЛЬ -->
+		<aside id="task-sidebar" class="sidebar-right hidden">
+			<button class="close-btn">Закрыть</button>
+			<div class="field-label">Название выбранной задачи:</div>
+			<input type="text" class="input-task-name">
+				<div class="field-label">Описание задачи:</div>
+				<textarea class="textarea-task-desc"></textarea>
+				<div class="task-info-list">
+					<div class="task-info-item" id="sidebar-created-date">Дата создания: </div>
+					<div class="task-info-item">
+						<label style="display: block; margin-bottom: 5px; font-weight: bold;">Дедлайн:</label>
+						<input type="date" class="sidebar-input-deadline" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
             </div>
-            <div class="sidebar-bottom">
-                <a href="auth.html" class="btn-logout" style="text-decoration: none; display: block;">Выйти</a>
-            </div>
-        </aside>
+					<div class="task-info-item">
+						<label style="display: block; margin-bottom: 5px; font-weight: bold;">Исполнитель:</label>
+						<select class="sidebar-input-executor" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+							<option value="">Не назначен</option>
+							<option value="user1">Иван Иванов</option>
+							<option value="user2">Анна Смирнова</option>
+						</select>
+					</div>
+					<div class="task-info-item">
+						<label style="display: block; margin-bottom: 5px; font-weight: bold;">Важность:</label>
+						<select class="sidebar-input-priority" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+							<option value="low">Низкий</option>
+							<option value="medium">Средний</option>
+							<option value="high">Высокий</option>
+						</select>
+					</div>
+					<div class="task-info-item">
+						<label style="display: block; margin-bottom: 5px; font-weight: bold;">Статус:</label>
+						<select class="sidebar-input-status" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+							<option value="To-Do">To-Do</option>
+							<option value="In Progress">In Progress</option>
+							<option value="Done">Done</option>
+						</select>
+					</div>
+					<div class="task-info-item">
+						<label style="display: block; margin-bottom: 5px; font-weight: bold;">Теги (через запятую):</label>
+						<input type="text" class="sidebar-input-tags" placeholder="design, bug, срочно" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+							<div id="sidebar-tags-container" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;"></div>
+						</div>
+				</div>
+				<button class="btn-apply-changes">
+					Применить<br>изменения</button>
+			</aside>
 
-        <!-- ЦЕНТРАЛЬНАЯ ОБЛАСТЬ (ШАПКА И СТОЛБЦЫ) -->
-        <main class="main-content">
-            <header class="top-bar">
-                <h1>Название доски</h1>
-                <div class="avatar">A</div>
-            </header>
+		<!-- МОДАЛЬНЫЕ ОКНА -->
+		<div id="add-column-modal" class="modal-overlay hidden">
+			<div class="modal-container">
+				<button class="modal-close">Закрыть</button>
+				<div class="modal-form-group">
+					<label class="modal-label">Название столбца</label>
+					<input type="text" class="modal-input">
+				</div>
+				<div class="modal-form-group">
+					<label class="modal-label">Кто сможет добавлять задачи?</label>
+					<select class="modal-input">
+						<option value="all">Все участники</option>
+						<option value="admin">Только админы</option>
+					</select>
+				</div>
+				<div class="modal-form-group">
+					<label class="modal-label">Уведомления</label>
+					<select class="modal-input">
+						<option value="yes">Да</option>
+						<option value="no">Нет</option>
+					</select>
+				</div>
+				<button class="modal-submit-btn">Создать</button>
+			</div>
+		</div>
 
-            <div class="board-area">
-                <!-- Контейнер для горизонтального скролла столбцов -->
-                <div class="board-columns-container">
+		<div id="board-params-modal" class="modal-overlay hidden">
+			<div class="modal-container modal-admin">
+				<button class="modal-close">Закрыть</button>
+				<div class="modal-admin-content">
+					<h2 class="modal-title-main">Параметры доски</h2>
+					<div class="modal-form-group">
+						<label class="modal-label">Email администратора</label>
+						<input type="email" class="modal-input" placeholder="admin@example.com">
+					</div>
+					<div class="modal-form-group">
+						<label class="modal-label">Уведомления</label>
+						<select class="modal-input">
+							<option value="yes">Да</option>
+							<option value="no">Нет</option>
+						</select>
+					</div>
+					<button class="modal-submit-btn btn-save">Сохранить</button>
+				</div>
+			</div>
+		</div>
 
-                    <!-- Столбец To-Do -->
-                    <div class="column">
-                        <div class="column-header">
-                            <span class="column-title">To-Do</span>
-                            <span class="column-edit">Изменить</span>
-                        </div>
-                        <button class="add-task-btn">+ Добавить задачу</button>
-                    </div>
+		<div id="add-task-modal" class="modal-overlay hidden">
+			<div class="modal-container">
+				<button class="modal-close">Закрыть</button>
+				<h2 class="modal-title-main">Создать задачу</h2>
+				<div class="modal-form-group">
+					<label class="modal-label">Название</label>
+					<input type="text" id="newTaskTitle" class="modal-input" placeholder="Название задачи">
+				</div>
+				<div class="modal-form-group">
+					<label class="modal-label">Описание</label>
+					<textarea class="modal-input" rows="3" placeholder="Описание"></textarea>
+				</div>
+				<div class="modal-form-group">
+					<label class="modal-label">Дедлайн</label>
+					<input type="date" id="newTaskDueDate" class="modal-input">
+				</div>
+				<div class="modal-form-group">
+					<label class="modal-label">Теги</label>
+					<input type="text" id="newTaskTags" class="modal-input" placeholder="design, bug, срочно">
+				</div>
+				<div class="modal-form-group">
+					<label class="modal-label">Приоритет</label>
+					<select id="newTaskPriority">
+						<option value="low">Низкий</option>
+						<option value="medium" selected="">Средний</option>
+						<option value="high">Высокий</option>
+					</select>
+				</div>
+				<button class="modal-submit-btn" onclick="submitTask()">Создать</button>
+			</div>
+		</div>
 
-                    <!-- Столбец In Progress -->
-                    <div class="column">
-                        <div class="column-header">
-                            <span class="column-title">In Progress</span>
-                            <span class="column-edit">Изменить</span>
-                        </div>
-                        <button class="add-task-btn">+ Добавить задачу</button>
-                    </div>
+		<div id="edit-column-modal" class="modal-overlay hidden">
+			<div class="modal-container">
+				<button class="modal-close">Закрыть</button>
+				<h2 class="modal-title-main">Редактировать столбец</h2>
+				<div class="modal-form-group">
+					<label class="modal-label">Название</label>
+					<input type="text" class="modal-input id-col-name">
+				</div>
+				<div class="modal-form-group">
+					<label class="modal-label">Кто может добавлять?</label>
+					<select class="modal-input id-col-role">
+						<option value="all">Все</option>
+						<option value="admin">Админы</option>
+					</select>
+				</div>
+				<button class="modal-submit-btn id-save-col-btn">Сохранить</button>
+				<button class="modal-submit-btn id-delete-col-btn" style="background:#ef4444">Удалить</button>
+			</div>
+		</div>
 
-                    <!-- Столбец Done -->
-                    <div class="column">
-                        <div class="column-header">
-                            <span class="column-title">Done</span>
-                            <span class="column-edit">Изменить</span>
-                        </div>
-                    </div>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.js"></script>
+		<script src="../js/api-integration.js"></script>
+		<script src="../js/sidebar-navigation.js"></script>
+		<script src="../js/script.js"></script>
 
-                </div> <!-- Конец board-columns-container -->
-                <!-- Кнопки управления доской снизу -->
-                <div class="board-actions">
-                    <span id="open-add-column-btn" class="action-light">Добавить новый столбец</span>
-                    <span id="open-board-params-btn" class="action-bold">Параметры доски</span>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- 1. ПРАВАЯ ПАНЕЛЬ (ПРОСМОТР И РЕДАКТИРОВАНИЕ ЗАДАЧИ) -->
-    <aside id="task-sidebar" class="sidebar-right hidden">
-        <button class="close-btn">Закрыть</button>
-
-        <div class="field-label">Название выбранной задачи:</div>
-        <input type="text" class="input-task-name">
-
-        <div class="field-label">Описание задачи:</div>
-        <textarea class="textarea-task-desc"></textarea>
-
-        <div class="task-info-list">
-            <div class="task-info-item" id="sidebar-created-date">Дата создания: </div>
-
-            <!-- Интерактивное поле изменения дедлайна -->
-            <div class="task-info-item">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Дедлайн:</label>
-                <input type="date" class="sidebar-input-deadline" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; background-color: #fff;">
-            </div>
-
-            <!-- Интерактивный выпадающий список исполнителей -->
-            <div class="task-info-item">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Исполнитель:</label>
-                <select class="sidebar-input-executor" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff;">
-                    <option value="">Не назначен</option>
-                    <option value="user1">Иван Иванов</option>
-                    <option value="user2">Анна Смирнова</option>
-                </select>
-            </div>
-
-            <div class="task-info-item">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Важность (Приоритет):</label>
-                <select class="sidebar-input-priority" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff;">
-                    <option value="low">Низкий</option>
-                    <option value="medium">Средний</option>
-                    <option value="high">Высокий</option>
-                </select>
-            </div>
-
-            <div class="task-info-item">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Статус задачи:</label>
-                <select class="sidebar-input-status" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff;">
-                    <option value="To-Do">To-Do</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Done">Done</option>
-                </select>
-            </div>
-
-            <!-- Интерактивное поле изменения тегов -->
-            <div class="task-info-item">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Теги (через запятую):</label>
-                <input type="text" class="sidebar-input-tags" placeholder="Например: design, bug, срочно" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
-                <div id="sidebar-tags-container" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;"></div>
-            </div>
-        </div>
-
-        <button class="btn-apply-changes">Применить<br>изменения</button>
-    </aside>
-
-    <!-- 2. ОКНО ДОБАВИТЬ СТОЛБЕЦ -->
-    <div id="add-column-modal" class="modal-overlay hidden">
-        <div class="modal-container">
-            <button class="modal-close">Закрыть</button>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Введите название столбца</label>
-                <input type="text" class="modal-input">
-            </div>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Кто сможет добавлять задачи?</label>
-                <select class="modal-input">
-                    <option value="" disabled selected>Выберите роль...</option>
-                    <option value="all">Все участники</option>
-                    <option value="admin">Только админы</option>
-                </select>
-            </div>
-
-            <!-- 🌟 ЗАМЕНИЛИ СОРТИРОВКУ НА ЭТОТ БЛОК -->
-            <div class="modal-form-group">
-                <label class="modal-label">Отправлять ли уведомления?</label>
-                <select class="modal-input">
-                    <option value="yes" selected>Да, отправлять</option>
-                    <option value="no">Нет, не нужно</option>
-                </select>
-            </div>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Тип уведомлений</label>
-                <select class="modal-input">
-                    <option value="" disabled selected>Выберите тип...</option>
-                    <option value="email">Email</option>
-                    <option value="push">Push</option>
-                </select>
-            </div>
-
-            <button class="modal-submit-btn">Создать</button>
-        </div>
-    </div>
-
-    <!-- 3. ОКНО ПАРАМЕТРЫ ДОСКИ -->
-    <div id="board-params-modal" class="modal-overlay hidden">
-        <div class="modal-container modal-admin" style="height: auto; padding-bottom: 30px;">
-            <button class="modal-close">Закрыть</button>
-
-            <div class="modal-admin-content" style="margin-top: 20px;">
-                <h2 class="modal-title-main" style="margin-bottom: 20px;">Параметры доски</h2>
-
-                <!-- Старый пункт: назначение админа -->
-                <div class="modal-form-group">
-                    <label class="modal-label">Назначить администратора (Email)</label>
-                    <input type="email" class="modal-input" placeholder="admin@example.com">
-                </div>
-
-                <!-- 🌟 НОВЫЙ ПУНКТ: Отправлять ли уведомления? -->
-                <div class="modal-form-group">
-                    <label class="modal-label">Отправлять ли уведомления?</label>
-                    <select class="modal-input">
-                        <option value="yes" selected>Да, отправлять</option>
-                        <option value="no">Нет, отключить глобально</option>
-                    </select>
-                </div>
-
-                <!-- 🌟 НОВЫЙ ПУНКТ: Период отправки -->
-                <div class="modal-form-group">
-                    <label class="modal-label">Период отправки уведомлений</label>
-                    <select class="modal-input">
-                        <option value="instantly">Мгновенно при изменениях</option>
-                        <option value="daily">Раз в день (итоговый отчет)</option>
-                        <option value="weekly">Раз в неделю</option>
-                    </select>
-                </div>
-
-                <!-- 🌟 НОВЫЙ ПУНКТ: Текст уведомления -->
-                <div class="modal-form-group">
-                    <label class="modal-label">Шаблон текста уведомления</label>
-                    <textarea class="modal-input" rows="3" placeholder="Например: В доске Collabo произошли изменения в задаче..." style="resize: vertical; height: auto;"></textarea>
-                </div>
-            </div>
-
-            <button class="modal-submit-btn btn-save" style="margin-top: 20px;">Сохранить параметры</button>
-        </div>
-    </div>
-
-    <!-- 4. МОДАЛЬНОЕ ОКНО: СОЗДАНИЕ ЗАДАЧИ -->
-    <div id="add-task-modal" class="modal-overlay hidden">
-        <div class="modal-container">
-            <button class="modal-close">Закрыть</button>
-            <h2 class="modal-title-main" style="margin-bottom: 20px;">Создать задачу</h2>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Название</label>
-                <input type="text" class="modal-input" placeholder="Введите название задачи">
-            </div>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Описание</label>
-                <textarea class="modal-input" rows="3" placeholder="Подробное описание задачи" style="resize: vertical;"></textarea>
-            </div>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Исполнитель</label>
-                <select class="modal-input">
-                    <option value="" disabled selected>Выберите исполнителя...</option>
-                    <option value="user1">Иван Иванов</option>
-                    <option value="user2">Анна Смирнова</option>
-                </select>
-            </div>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Дедлайн</label>
-                <input type="date" class="modal-input">
-            </div>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Приоритет (Важность)</label>
-                <select class="modal-input">
-                    <option value="low">Низкий</option>
-                    <option value="medium" selected>Средний</option>
-                    <option value="high">Высокий</option>
-                </select>
-            </div>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Теги</label>
-                <input type="text" class="modal-input" placeholder="Например: design, bug, срочно">
-            </div>
-
-			<button class="modal-submit-btn" onclick="submitTask()">Создать задачу</button>
-        </div>
-    </div>
-    <!-- 5. МОДАЛЬНОЕ ОКНО: РЕДАКТИРОВАНИЕ СТОЛБЦА -->
-    <div id="edit-column-modal" class="modal-overlay hidden">
-        <div class="modal-container">
-            <button class="modal-close">Закрыть</button>
-            <h2 class="modal-title-main" style="text-align: center; margin-bottom: 20px;">Редактировать столбец</h2>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Название столбца</label>
-                <input type="text" class="modal-input id-col-name">
-            </div>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Кто сможет добавлять задачи?</label>
-                <select class="modal-input id-col-role">
-                    <option value="all">Все участники</option>
-                    <option value="admin">Только админы</option>
-                </select>
-            </div>
-
-            <div class="modal-form-group">
-                <label class="modal-label">Разрешить добавление задач через кнопку?</label>
-                <select class="modal-input id-col-btn-toggle">
-                    <option value="yes">Да, показывать кнопку</option>
-                    <option value="no">Нет, скрыть кнопку</option>
-                </select>
-            </div>
-
-            <!-- Кнопки действий -->
-            <button class="modal-submit-btn id-save-col-btn" style="margin-top: 30px;">Сохранить изменения</button>
-            <button class="modal-submit-btn id-delete-col-btn" style="margin-top: 12px; background-color: #ef4444; height: 44px; font-size: 15px;">Удалить столбец</button>
-        </div>
-    </div>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.js"></script>
-	<script src="../js/api-integration.js"></script>
-	<script src="../js/sidebar-navigation.js"></script>
-	<script src="../js/script.js"></script>
-</body>
+		<script>
+			// Выпадающее меню экспорта
+			document.getElementById('exportBtn').addEventListener('click', function(e) {
+			const menu = document.getElementById('exportMenu');
+			menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+			e.stopPropagation();
+			});
+			document.addEventListener('click', function() {
+			const menu = document.getElementById('exportMenu');
+			if (menu) menu.style.display = 'none';
+			});
+		</script>
+	</body>
 </html>

@@ -552,6 +552,12 @@ textarea.modal-input {
     font-size: 10px;
     color: #475569;
 }
+.export-dropdown:hover #exportMenu {
+    display: block !important;
+}
+.export-dropdown div:hover {
+    background-color: #f0f0f0;
+}
 /* ================= УТИЛИТЫ ================= */
 .hidden {
     display: none !important;

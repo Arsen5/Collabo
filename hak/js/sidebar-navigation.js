@@ -104,20 +104,25 @@ async function renderBoardsMenu() {
         deleteBtn.title = 'Удалить доску';
         
         deleteBtn.onclick = async (e) => {
-            e.stopPropagation();
-            if (confirm(`Удалить доску "${board.name}" со всеми задачами?`)) {
-                try {
-                    await fetch(`${API_URL}/boards/${board.id}`, { method: 'DELETE' });
-                    await renderBoardsMenu();
-                    if (allBoards.length > 0) {
-                        await switchToBoard(allBoards[0].id);
-                    }
-                } catch (error) {
-                    console.error('Ошибка удаления:', error);
-                    alert('Ошибка удаления доски');
-                }
+    e.stopPropagation();
+    if (confirm(`Удалить доску "${board.name}" со всеми задачами?`)) {
+        try {
+            await fetch(`${API_URL}/boards/${board.id}`, { method: 'DELETE' });
+            
+            if (allBoards.length === 1) {
+                // Если удаляем последнюю доску — переходим на страницу создания
+                window.location.href = 'create-board.html';
+            } else {
+                await renderBoardsMenu();
+                const newCurrentId = allBoards.find(b => b.id !== board.id)?.id;
+                if (newCurrentId) await switchToBoard(newCurrentId);
             }
-        };
+        } catch (error) {
+            console.error('Ошибка удаления:', error);
+            alert('Ошибка удаления доски');
+        }
+    }
+};
         
         container.appendChild(boardLink);
         container.appendChild(deleteBtn);
