@@ -33,40 +33,33 @@ async function createBoardOnServer(name, description = '') {
     }
 }
 
-async function switchToBoard(boardId) {
-    console.log('🔄 Переключение на доску:', boardId);
-    currentBoardId = boardId;
-    localStorage.setItem('collabo_current_board_id', boardId);
-    
-    if (typeof renderTasksForBoard !== 'undefined') {
-        await renderTasksForBoard(boardId);
-    }
-    
-    document.querySelectorAll('.menu-item[data-board-id]').forEach(item => {
-        item.classList.remove('active');
-        if (item.dataset.boardId === boardId) {
-            item.classList.add('active');
-        }
-    });
-    
-    const board = allBoards.find(b => b.id === boardId);
-    const topBarTitle = document.querySelector('.top-bar h1');
-    if (topBarTitle && board) {
-        topBarTitle.textContent = board.name;
-    }
-}
-
 async function renderBoardsMenu() {
     const menuContainer = document.querySelector('.menu');
     if (!menuContainer) return;
     
     allBoards = await loadBoardsFromServer();
+    
+    // Если нет досок — создаём дефолтную
+    if (allBoards.length === 0) {
+        const newBoard = await createBoardOnServer('Моя первая доска');
+        allBoards = [newBoard];
+        localStorage.setItem('collabo_current_board_id', newBoard.id);
+    }
+    
     currentBoardId = localStorage.getItem('collabo_current_board_id');
+    
+    // Проверяем, есть ли текущая доска в списке
+    if (!allBoards.find(b => b.id === currentBoardId) && allBoards.length > 0) {
+        currentBoardId = allBoards[0].id;
+        localStorage.setItem('collabo_current_board_id', currentBoardId);
+    }
     
     const createBoardBtn = menuContainer.querySelector('.menu-item[href="create-board.html"]');
     
     const oldBoardItems = menuContainer.querySelectorAll('[data-board-id-container]');
     oldBoardItems.forEach(item => item.remove());
+    
+    const isBoardPage = window.location.pathname.includes('board.html');
     
     allBoards.forEach(board => {
         const container = document.createElement('div');
@@ -83,13 +76,14 @@ async function renderBoardsMenu() {
         boardLink.dataset.boardId = board.id;
         boardLink.style.flex = '1';
         
-        if (currentBoardId === board.id) {
+        if (currentBoardId === board.id && isBoardPage) {
             boardLink.classList.add('active');
         }
         
         boardLink.addEventListener('click', async (e) => {
             e.preventDefault();
-            await switchToBoard(board.id);
+            localStorage.setItem('collabo_current_board_id', board.id);
+            window.location.href = 'board.html';
         });
         
         const deleteBtn = document.createElement('button');
@@ -108,14 +102,7 @@ async function renderBoardsMenu() {
             if (confirm(`Удалить доску "${board.name}" со всеми задачами?`)) {
                 try {
                     await fetch(`${API_URL}/boards/${board.id}`, { method: 'DELETE' });
-                    
-                    if (allBoards.length === 1) {
-                        window.location.href = 'create-board.html';
-                    } else {
-                        await renderBoardsMenu();
-                        const newCurrentId = allBoards.find(b => b.id !== board.id)?.id;
-                        if (newCurrentId) await switchToBoard(newCurrentId);
-                    }
+                    window.location.href = 'board.html';
                 } catch (error) {
                     console.error('Ошибка удаления:', error);
                     alert('Ошибка удаления доски');
@@ -133,24 +120,16 @@ async function renderBoardsMenu() {
         }
     });
     
-    const currentBoard = allBoards.find(b => b.id === currentBoardId);
-    const topBarTitle = document.querySelector('.top-bar h1');
-    if (topBarTitle && currentBoard) {
-        topBarTitle.textContent = currentBoard.name;
-    }
-    
-    if (allBoards.length === 0) {
-        const newBoard = await createBoardOnServer('Моя первая доска');
-        await renderBoardsMenu();
-        if (typeof syncAllTasks !== 'undefined') {
-            await syncAllTasks();
+    // ========== ОБНОВЛЯЕМ ЗАГОЛОВОК ТОЛЬКО НА СТРАНИЦЕ board.html ==========
+    if (isBoardPage) {
+        const currentBoard = allBoards.find(b => b.id === currentBoardId);
+        const topBarTitle = document.querySelector('.top-bar h1');
+        if (topBarTitle && currentBoard) {
+            topBarTitle.textContent = currentBoard.name;
         }
-    } else if (currentBoardId && typeof renderTasksForBoard !== 'undefined') {
-        await renderTasksForBoard(currentBoardId);
     }
+    // ========================================================================
 }
-
-// НЕТ дублирующего кода создания доски!
 
 document.addEventListener('DOMContentLoaded', () => {
     renderBoardsMenu();

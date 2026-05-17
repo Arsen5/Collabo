@@ -34,7 +34,6 @@
 						<input type="text" class="input-large" id="boardNameInput">
                 </div>
 
-					<!-- Приглашение по почте -->
 					<div class="form-group spacing-top">
 						<h2>Добавьте коллег</h2>
 						<p class="subtitle">Введите email в поле ниже</p>
@@ -54,7 +53,13 @@
 		<script src="../js/sidebar-navigation.js"></script>
 
 		<script>
-			document.getElementById('pageTitle').textContent = 'Создание доски';
+			// Принудительная установка заголовка (через setTimeout для переопределения)
+			setTimeout(() => {
+			const titleEl = document.querySelector('.top-bar h1');
+			if (titleEl) titleEl.textContent = 'Создание доски';
+			const pageTitleEl = document.getElementById('pageTitle');
+			if (pageTitleEl) pageTitleEl.textContent = 'Создание доски';
+			}, 50);
 
 			// Создание доски
 			document.getElementById('createBoardBtn').addEventListener('click', async () => {
