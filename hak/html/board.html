@@ -194,81 +194,51 @@
 			</aside>
 
 		<!-- МОДАЛЬНЫЕ ОКНА -->
-		<div id="add-column-modal" class="modal-overlay hidden">
-			<div class="modal-container">
-				<button class="modal-close">Закрыть</button>
-				<div class="modal-form-group">
-					<label class="modal-label">Название столбца</label>
-					<input type="text" class="modal-input">
-				</div>
-				<div class="modal-form-group">
-					<label class="modal-label">Кто сможет добавлять задачи?</label>
-					<select class="modal-input">
-						<option value="all">Все участники</option>
-						<option value="admin">Только админы</option>
-					</select>
-				</div>
-				<div class="modal-form-group">
-					<label class="modal-label">Уведомления</label>
-					<select class="modal-input">
-						<option value="yes">Да</option>
-						<option value="no">Нет</option>
-					</select>
-				</div>
-				<button class="modal-submit-btn">Создать</button>
-			</div>
-		</div>
-
-		<div id="board-params-modal" class="modal-overlay hidden">
-			<div class="modal-container modal-admin">
-				<button class="modal-close">Закрыть</button>
-				<div class="modal-admin-content">
-					<h2 class="modal-title-main">Параметры доски</h2>
-					<div class="modal-form-group">
-						<label class="modal-label">Email администратора</label>
-						<input type="email" class="modal-input" placeholder="admin@example.com">
-					</div>
-					<div class="modal-form-group">
-						<label class="modal-label">Уведомления</label>
-						<select class="modal-input">
-							<option value="yes">Да</option>
-							<option value="no">Нет</option>
-						</select>
-					</div>
-					<button class="modal-submit-btn btn-save">Сохранить</button>
-				</div>
-			</div>
-		</div>
-
+		<!-- 4. МОДАЛЬНОЕ ОКНО: СОЗДАНИЕ ЗАДАЧИ -->
 		<div id="add-task-modal" class="modal-overlay hidden">
 			<div class="modal-container">
 				<button class="modal-close">Закрыть</button>
 				<h2 class="modal-title-main">Создать задачу</h2>
+
 				<div class="modal-form-group">
 					<label class="modal-label">Название</label>
-					<input type="text" id="newTaskTitle" class="modal-input" placeholder="Название задачи">
-				</div>
+					<input type="text" id="taskTitle" class="modal-input" placeholder="Введите название задачи">
+        </div>
+
 				<div class="modal-form-group">
 					<label class="modal-label">Описание</label>
-					<textarea class="modal-input" rows="3" placeholder="Описание"></textarea>
+					<textarea id="taskDesc" class="modal-input" rows="3" placeholder="Подробное описание задачи"></textarea>
 				</div>
+
+				<div class="modal-form-group">
+					<label class="modal-label">Исполнитель</label>
+					<select id="taskAssignee" class="modal-input">
+						<option value="" selected="">Не назначен</option>
+						<option value="user1">Иван Иванов</option>
+						<option value="user2">Анна Смирнова</option>
+					</select>
+				</div>
+
 				<div class="modal-form-group">
 					<label class="modal-label">Дедлайн</label>
-					<input type="date" id="newTaskDueDate" class="modal-input">
-				</div>
-				<div class="modal-form-group">
-					<label class="modal-label">Теги</label>
-					<input type="text" id="newTaskTags" class="modal-input" placeholder="design, bug, срочно">
-				</div>
+					<input type="date" id="taskDueDate" class="modal-input">
+        </div>
+
 				<div class="modal-form-group">
 					<label class="modal-label">Приоритет</label>
-					<select id="newTaskPriority">
+					<select id="taskPriority" class="modal-input">
 						<option value="low">Низкий</option>
 						<option value="medium" selected="">Средний</option>
 						<option value="high">Высокий</option>
 					</select>
 				</div>
-				<button class="modal-submit-btn" onclick="submitTask()">Создать</button>
+
+				<div class="modal-form-group">
+					<label class="modal-label">Теги</label>
+					<input type="text" id="taskTags" class="modal-input" placeholder="Например: design, bug, срочно">
+        </div>
+
+				<button class="modal-submit-btn" onclick="submitTask()">Создать задачу</button>
 			</div>
 		</div>
 

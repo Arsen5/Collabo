@@ -14,7 +14,7 @@ function createTaskCard(task) {
     card.className = 'task-card';
     card.setAttribute('data-id', task.id);
     card.setAttribute('draggable', 'true');
-    
+    const assigneeDisplay = task.assignee ? `Исполнитель: ${task.assignee}` : '';
     if (task.tags && task.tags.includes('urgent')) {
         task.priority = 'high';
     }
@@ -188,14 +188,14 @@ window.submitTask = async function() {
     if (!window.currentColumnForNewTask) return;
     
     const modal = document.getElementById('add-task-modal');
-    const nameInput = modal.querySelector('input[type="text"]');
-    const descInput = modal.querySelector('textarea');
-    const selects = modal.querySelectorAll('select');
-    const prioritySelect = selects[1];
-    const dateInput = modal.querySelector('input[type="date"]');
-    const tagsInput = modal.querySelector('input[placeholder*="design"]');
+    const titleInput = document.getElementById('taskTitle');
+    const descInput = document.getElementById('taskDesc');
+    const assigneeSelect = document.getElementById('taskAssignee');
+    const prioritySelect = document.getElementById('taskPriority');
+    const dateInput = document.getElementById('taskDueDate');
+    const tagsInput = document.getElementById('taskTags');
     
-    const title = nameInput?.value.trim();
+    const title = titleInput?.value.trim();
     if (!title) {
         alert('Введите название задачи');
         return;
@@ -205,32 +205,31 @@ window.submitTask = async function() {
     let status = columnTitle === 'In Progress' ? 'progress' : columnTitle === 'Done' ? 'done' : 'todo';
     
     const tags = tagsInput?.value ? tagsInput.value.split(',').map(t => t.trim()) : [];
-    let priority = 'medium';
-    const priorityText = prioritySelect?.options[prioritySelect.selectedIndex]?.text;
-    if (priorityText === 'Высокий') priority = 'high';
-    else if (priorityText === 'Низкий') priority = 'low';
+    let priority = prioritySelect?.value || 'medium';
     
     const isUrgent = tags.includes('urgent');
     if (isUrgent) priority = 'high';
     
     const dueDate = dateInput?.value || null;
+    const assignee = assigneeSelect?.value || '';
     
     const currentBoardId = getCurrentBoardId();
-    console.log('📌 Создание задачи для доски:', currentBoardId);
     
     try {
         await createTaskAPI({
             title, description: descInput?.value || '',
-            status, priority, tags, dueDate, boardId: currentBoardId
+            status, priority, tags, dueDate, boardId: currentBoardId, assignee
         });
         
         if (priority === 'high') showNotification('⚠️ Создана задача с высоким приоритетом: ' + title);
         if (isUrgent) showNotification('🔴 Тег "urgent"! Приоритет повышен до HIGH: ' + title);
         
-        nameInput.value = '';
+        titleInput.value = '';
         if (descInput) descInput.value = '';
         if (dateInput) dateInput.value = '';
         if (tagsInput) tagsInput.value = '';
+        if (assigneeSelect) assigneeSelect.value = '';
+        prioritySelect.value = 'medium';
         
         modal.classList.add('hidden');
         window.currentColumnForNewTask = null;
