@@ -5,6 +5,41 @@
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<title>Доска</title>
 				<link rel="stylesheet" href="../css/style.css">
+					<style>
+						/* ПРИНУДИТЕЛЬНЫЕ СТИЛИ ДЛЯ МЕНЮ И ЗАГОЛОВКОВ */
+						.menu-item {
+						color: #1f2937 !important;
+						font-size: 14px !important;
+						font-weight: 500 !important;
+						display: block !important;
+						padding: 8px 12px !important;
+						border-radius: 6px !important;
+						}
+						.board-item {
+						display: flex !important;
+						align-items: center !important;
+						justify-content: space-between !important;
+						width: 100% !important;
+						}
+						.menu-item.active {
+						background-color: #eef2ff !important;
+						color: #4f46e5 !important;
+						}
+						.sidebar .menu a {
+						color: #1f2937 !important;
+						text-decoration: none !important;
+						}
+						.top-bar h1 {
+						color: #1a1a2e !important;
+						font-size: 26px !important;
+						font-weight: 700 !important;
+						}
+						.avatar {
+						background-color: #eef2ff !important;
+						color: #4f46e5 !important;
+						cursor: pointer;
+						}
+					</style>
 				</head>
 	<body>
 
@@ -25,7 +60,7 @@
 			<!-- ЦЕНТРАЛЬНАЯ ОБЛАСТЬ -->
 			<main class="main-content">
 				<header class="top-bar">
-					<h1>Название доски</h1>
+					<h1 id="pageTitle">Название доски</h1>
 					<div class="avatar">A</div>
 				</header>
 
@@ -97,7 +132,7 @@
 					<div class="task-info-item">
 						<label style="display: block; margin-bottom: 5px; font-weight: bold;">Дедлайн:</label>
 						<input type="date" class="sidebar-input-deadline" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
-				</div>
+            </div>
 					<div class="task-info-item">
 						<label style="display: block; margin-bottom: 5px; font-weight: bold;">Исполнитель:</label>
 						<select class="sidebar-input-executor" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
@@ -129,22 +164,18 @@
 						</div>
 				</div>
 				<button class="btn-apply-changes">
-					Применить<br>изменения
-			</button>
+					Применить<br>изменения</button>
 			</aside>
 
 		<!-- МОДАЛЬНЫЕ ОКНА -->
-		<!-- 2. МОДАЛЬНОЕ ОКНО: ДОБАВИТЬ СТОЛБЕЦ -->
 		<div id="add-column-modal" class="modal-overlay hidden">
 			<div class="modal-container">
 				<button class="modal-close">Закрыть</button>
 				<h2 class="modal-title-main">Добавить столбец</h2>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Название столбца</label>
 					<input type="text" class="modal-input" placeholder="Например: Тестирование">
-				</div>
-
+            </div>
 				<div class="modal-form-group">
 					<label class="modal-label">Кто может добавлять задачи?</label>
 					<select class="modal-input">
@@ -152,7 +183,6 @@
 						<option value="admin">Только администраторы</option>
 					</select>
 				</div>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Отправлять уведомления?</label>
 					<select class="modal-input">
@@ -160,7 +190,6 @@
 						<option value="no">Не отправлять</option>
 					</select>
 				</div>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Тип уведомлений</label>
 					<select class="modal-input">
@@ -168,24 +197,18 @@
 						<option value="telegram">В Telegram</option>
 					</select>
 				</div>
-
 				<button class="modal-submit-btn">Создать столбец</button>
 			</div>
 		</div>
 
-
-		<!-- 🌟 И ЭТО МОДАЛЬНОЕ ОКНО ТОЖЕ 🌟 -->
-		<!-- 3. МОДАЛЬНОЕ ОКНО: ПАРАМЕТРЫ ДОСКИ -->
 		<div id="board-params-modal" class="modal-overlay hidden">
 			<div class="modal-container">
 				<button class="modal-close">Закрыть</button>
 				<h2 class="modal-title-main">Параметры доски</h2>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Email администратора</label>
 					<input type="email" class="modal-input" placeholder="admin@example.com">
-				</div>
-
+            </div>
 				<div class="modal-form-group">
 					<label class="modal-label">Отправлять уведомления?</label>
 					<select class="modal-input">
@@ -193,7 +216,6 @@
 						<option value="no">Нет</option>
 					</select>
 				</div>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Периодичность уведомлений</label>
 					<select class="modal-input">
@@ -201,31 +223,26 @@
 						<option value="daily">Раз в день</option>
 					</select>
 				</div>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Шаблон уведомлений</label>
 					<textarea class="modal-input" rows="4" placeholder="Текст шаблона..."></textarea>
 				</div>
-
 				<button class="modal-submit-btn">Сохранить параметры</button>
 			</div>
 		</div>
-		<!-- 4. МОДАЛЬНОЕ ОКНО: СОЗДАНИЕ ЗАДАЧИ -->
+
 		<div id="add-task-modal" class="modal-overlay hidden">
 			<div class="modal-container">
 				<button class="modal-close">Закрыть</button>
 				<h2 class="modal-title-main">Создать задачу</h2>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Название</label>
 					<input type="text" id="taskTitle" class="modal-input" placeholder="Введите название задачи">
-				</div>
-
+            </div>
 				<div class="modal-form-group">
 					<label class="modal-label">Описание</label>
 					<textarea id="taskDesc" class="modal-input" rows="3" placeholder="Подробное описание задачи"></textarea>
 				</div>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Исполнитель</label>
 					<select id="taskAssignee" class="modal-input">
@@ -234,12 +251,10 @@
 						<option value="user2">Анна Смирнова</option>
 					</select>
 				</div>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Дедлайн</label>
 					<input type="date" id="taskDueDate" class="modal-input">
-				</div>
-
+            </div>
 				<div class="modal-form-group">
 					<label class="modal-label">Приоритет</label>
 					<select id="taskPriority" class="modal-input">
@@ -248,12 +263,10 @@
 						<option value="high">Высокий</option>
 					</select>
 				</div>
-
 				<div class="modal-form-group">
 					<label class="modal-label">Теги</label>
 					<input type="text" id="taskTags" class="modal-input" placeholder="Например: design, bug, срочно">
-				</div>
-
+            </div>
 				<button class="modal-submit-btn" onclick="submitTask()">Создать задачу</button>
 			</div>
 		</div>
@@ -265,7 +278,7 @@
 				<div class="modal-form-group">
 					<label class="modal-label">Название</label>
 					<input type="text" class="modal-input id-col-name">
-				</div>
+            </div>
 				<div class="modal-form-group">
 					<label class="modal-label">Кто может добавлять?</label>
 					<select class="modal-input id-col-role">
@@ -275,6 +288,27 @@
 				</div>
 				<button class="modal-submit-btn id-save-col-btn">Сохранить</button>
 				<button class="modal-submit-btn id-delete-col-btn" style="background:#ef4444">Удалить</button>
+			</div>
+		</div>
+
+		<!-- МОДАЛЬНОЕ ОКНО ПРОФИЛЯ -->
+		<div id="profile-modal" class="modal-overlay hidden">
+			<div class="modal-container" style="width: 400px;">
+				<button class="modal-close" onclick="closeProfileModal()">Закрыть</button>
+				<h2 class="modal-title-main">Профиль пользователя</h2>
+				<div class="modal-form-group">
+					<label class="modal-label">Имя</label>
+					<input type="text" id="profileName" class="modal-input" readonly="">
+            </div>
+				<div class="modal-form-group">
+					<label class="modal-label">Email</label>
+					<input type="email" id="profileEmail" class="modal-input" readonly="">
+            </div>
+				<div class="modal-form-group">
+					<label class="modal-label">Роль</label>
+					<input type="text" id="profileRole" class="modal-input" value="Пользователь" readonly="">
+            </div>
+				<button class="modal-submit-btn" onclick="closeProfileModal()">Закрыть</button>
 			</div>
 		</div>
 
@@ -288,6 +322,23 @@
 			const avatarEl = document.querySelector('.avatar');
 			if (avatarEl && userName) {
 			avatarEl.textContent = userName.charAt(0).toUpperCase();
+			}
+
+			// Открытие профиля по клику на аватарку
+			const avatar = document.querySelector('.avatar');
+			if (avatar) {
+			avatar.style.cursor = 'pointer';
+			avatar.addEventListener('click', () => {
+			const userName = localStorage.getItem('userName');
+			const userEmail = localStorage.getItem('userEmail') || 'не указан';
+			document.getElementById('profileName').value = userName || 'Пользователь';
+			document.getElementById('profileEmail').value = userEmail;
+			document.getElementById('profile-modal').classList.remove('hidden');
+			});
+			}
+
+			function closeProfileModal() {
+			document.getElementById('profile-modal').classList.add('hidden');
 			}
 		</script>
 	</body>

@@ -57,9 +57,11 @@
 			const titleEl = document.querySelector('.top-bar h1');
 			if (titleEl) titleEl.textContent = 'Создание доски';
 
-			// Создание доски
+			// Создание доски + приглашение
 			document.getElementById('createBoardBtn').addEventListener('click', async () => {
 			const boardName = document.getElementById('boardNameInput').value.trim();
+			const inviteEmail = document.getElementById('inviteEmail').value.trim();
+
 			if (!boardName) {
 			alert('Введите название доски');
 			return;
@@ -72,8 +74,31 @@
 			}
 
 			try {
-			await createBoardOnServer(boardName);
+			// Создаём доску
+			const board = await createBoardOnServer(boardName);
+
+			// Если указан email — приглашаем
+			if (inviteEmail) {
+			const token = localStorage.getItem('token');
+			const inviteRes = await fetch(`${window.API_URL}/boards/${board.id}/invite`, {
+			method: 'POST',
+			headers: {
+			'Content-Type': 'application/json',
+			'Authorization': `Bearer ${token}`
+			},
+			body: JSON.stringify({ email: inviteEmail })
+			});
+
+			if (inviteRes.ok) {
+			alert(`Доска "${boardName}" создана! Пользователь ${inviteEmail} приглашён.`);
+			} else {
+			const error = await inviteRes.text();
+			alert(`Доска создана, но не удалось пригласить: ${error}`);
+			}
+			} else {
 			alert(`Доска "${boardName}" создана!`);
+			}
+
 			window.location.href = 'board.html';
 			} catch (error) {
 			console.error('Ошибка создания:', error);
@@ -81,14 +106,37 @@
 			}
 			});
 
-			// Приглашение по почте
-			document.getElementById('inviteBtn').addEventListener('click', () => {
+			// Кнопка "Пригласить" (отдельное приглашение после создания)
+			document.getElementById('inviteBtn').addEventListener('click', async () => {
 			const email = document.getElementById('inviteEmail').value.trim();
-			if (email) {
+			if (!email) {
+			alert('Введите email');
+			return;
+			}
+
+			// Получаем ID текущей доски (если мы на странице board.html)
+			const currentBoardId = localStorage.getItem('collabo_current_board_id');
+			if (!currentBoardId) {
+			alert('Сначала создайте доску');
+			return;
+			}
+
+			const token = localStorage.getItem('token');
+			const response = await fetch(`${window.API_URL}/boards/${currentBoardId}/invite`, {
+			method: 'POST',
+			headers: {
+			'Content-Type': 'application/json',
+			'Authorization': `Bearer ${token}`
+			},
+			body: JSON.stringify({ email })
+			});
+
+			if (response.ok) {
 			alert(`Приглашение отправлено на ${email}`);
 			document.getElementById('inviteEmail').value = '';
 			} else {
-			alert('Введите email');
+			const error = await response.text();
+			alert('Ошибка: ' + error);
 			}
 			});
 		</script>

@@ -1,7 +1,6 @@
 // ========== УПРАВЛЕНИЕ ДОСКАМИ ==========
 const API_URL = "http://localhost:5000/api";
 
-// Функция для fetch с авторизацией (токен берётся из глобальной области)
 async function authFetch(url, options = {}) {
     const token = localStorage.getItem('token');
     const headers = {
@@ -17,68 +16,44 @@ async function authFetch(url, options = {}) {
     return response;
 }
 
-let currentBoardId = null;
-let allBoards = [];
-
-async function loadBoardsFromServer() {
+async function loadBoards() {
     try {
-        const response = await authFetch(`${API_URL}/boards`);
-        if (!response.ok) throw new Error('Ошибка загрузки досок');
-        allBoards = await response.json();
-        return allBoards;
+        // Используем /api/user/boards (свои + приглашённые)
+        const response = await authFetch(`${API_URL}/user/boards`);
+        const boards = await response.json();
+        console.log('📋 Доски загружены:', boards);
+        return boards;
     } catch (error) {
         console.error('Ошибка загрузки досок:', error);
         return [];
     }
 }
 
-async function createBoardOnServer(name, description = '') {
-    try {
-        const response = await authFetch(`${API_URL}/boards`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description })
-        });
-        if (!response.ok) throw new Error('Ошибка создания доски');
-        const newBoard = await response.json();
-        console.log('✅ Доска создана:', newBoard);
-        return newBoard;
-    } catch (error) {
-        console.error('Ошибка создания доски:', error);
-        throw error;
-    }
+async function createBoardOnServer(name) {
+    const response = await authFetch(`${API_URL}/boards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    if (!response.ok) throw new Error('Ошибка создания доски');
+    return await response.json();
 }
 
-async function renderBoardsMenu() {
+async function renderBoards() {
     const menuContainer = document.querySelector('.menu');
     if (!menuContainer) return;
     
-    allBoards = await loadBoardsFromServer();
+    const boards = await loadBoards();
+    const currentBoardId = localStorage.getItem('collabo_current_board_id');
     
-    // Если нет досок — создаём дефолтную
-    if (allBoards.length === 0) {
-        const newBoard = await createBoardOnServer('Моя первая доска');
-        allBoards = [newBoard];
-        localStorage.setItem('collabo_current_board_id', newBoard.id);
-    }
+    const createBtn = menuContainer.querySelector('.menu-item[href="create-board.html"]');
     
-    currentBoardId = localStorage.getItem('collabo_current_board_id');
+    const oldItems = menuContainer.querySelectorAll('.board-item');
+    oldItems.forEach(item => item.remove());
     
-    if (!allBoards.find(b => b.id === currentBoardId) && allBoards.length > 0) {
-        currentBoardId = allBoards[0].id;
-        localStorage.setItem('collabo_current_board_id', currentBoardId);
-    }
-    
-    const createBoardBtn = menuContainer.querySelector('.menu-item[href="create-board.html"]');
-    
-    const oldBoardItems = menuContainer.querySelectorAll('[data-board-id-container]');
-    oldBoardItems.forEach(item => item.remove());
-    
-    const isBoardPage = window.location.pathname.includes('board.html');
-    
-    allBoards.forEach(board => {
+    boards.forEach(board => {
         const container = document.createElement('div');
-        container.setAttribute('data-board-id-container', '');
+        container.className = 'board-item';
         container.style.display = 'flex';
         container.style.alignItems = 'center';
         container.style.justifyContent = 'space-between';
@@ -88,14 +63,14 @@ async function renderBoardsMenu() {
         boardLink.href = '#';
         boardLink.className = 'menu-item';
         boardLink.textContent = board.name;
-        boardLink.dataset.boardId = board.id;
         boardLink.style.flex = '1';
+        boardLink.style.cursor = 'pointer';
         
-        if (currentBoardId === board.id && isBoardPage) {
+        if (currentBoardId === board.id) {
             boardLink.classList.add('active');
         }
         
-        boardLink.addEventListener('click', async (e) => {
+        boardLink.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.setItem('collabo_current_board_id', board.id);
             window.location.href = 'board.html';
@@ -108,42 +83,41 @@ async function renderBoardsMenu() {
         deleteBtn.style.cursor = 'pointer';
         deleteBtn.style.color = '#dc3545';
         deleteBtn.style.fontSize = '14px';
-        deleteBtn.style.padding = '8px';
-        deleteBtn.style.borderRadius = '6px';
+        deleteBtn.style.padding = '4px 8px';
+        deleteBtn.style.borderRadius = '4px';
         deleteBtn.title = 'Удалить доску';
         
         deleteBtn.onclick = async (e) => {
             e.stopPropagation();
-            if (confirm(`Удалить доску "${board.name}" со всеми задачами?`)) {
-                try {
-                    await authFetch(`${API_URL}/boards/${board.id}`, { method: 'DELETE' });
-                    window.location.href = 'board.html';
-                } catch (error) {
-                    console.error('Ошибка удаления:', error);
-                    alert('Ошибка удаления доски');
-                }
+            const boardName = board.name || 'эту доску';
+            if (confirm(`Удалить доску "${boardName}" со всеми задачами?`)) {
+                await authFetch(`${API_URL}/boards/${board.id}`, { method: 'DELETE' });
+                window.location.href = 'board.html';
             }
         };
         
         container.appendChild(boardLink);
         container.appendChild(deleteBtn);
         
-        if (createBoardBtn) {
-            menuContainer.insertBefore(container, createBoardBtn);
+        if (createBtn) {
+            menuContainer.insertBefore(container, createBtn);
         } else {
             menuContainer.appendChild(container);
         }
     });
     
-    if (isBoardPage) {
-        const currentBoard = allBoards.find(b => b.id === currentBoardId);
-        const topBarTitle = document.querySelector('.top-bar h1');
-        if (topBarTitle && currentBoard) {
-            topBarTitle.textContent = currentBoard.name;
+    // Обновляем заголовок на странице board.html
+    if (window.location.pathname.includes('board.html')) {
+        const currentBoard = boards.find(b => b.id === currentBoardId);
+        const titleEl = document.querySelector('.top-bar h1');
+        if (titleEl && currentBoard) {
+            titleEl.textContent = currentBoard.name;
+        } else if (titleEl && boards.length > 0) {
+            titleEl.textContent = boards[0].name;
         }
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    renderBoardsMenu();
+    renderBoards();
 });
