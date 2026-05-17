@@ -558,6 +558,76 @@ textarea.modal-input {
 .export-dropdown div:hover {
     background-color: #f0f0f0;
 }
+/*фильты*/
+.filter-bar {
+display: flex;
+gap: 15px;
+padding: 10px 20px;
+background: #fff;
+border-bottom: 1px solid #e0e0e0;
+flex-wrap: wrap;
+align-items: center;
+}
+
+.filter-bar input, .filter-bar select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+.filter-bar input {
+    width: 200px;
+}
+
+.export-btn {
+background: #4f46e5;
+color: white;
+border: none;
+padding: 8px 16px;
+border-radius: 6px;
+cursor: pointer;
+}
+
+.export-btn:hover {
+    background: #6366f1;
+}
+
+.export-dropdown {
+position: relative;
+display: inline-block;
+}
+
+.export-menu {
+display: none;
+position: absolute;
+right: 0;
+top: 100%;
+background: white;
+border: 1px solid #ccc;
+border-radius: 6px;
+z-index: 100;
+min-width: 150px;
+box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.export-menu div {
+padding: 8px 12px;
+cursor: pointer;
+}
+
+.export-menu div:hover {
+background-color: #f0f0f0;
+}
+
+.export-menu div:first-child {
+border-radius: 6px 6px 0 0;
+}
+
+.export-menu div:last-child {
+border-radius: 0 0 6px 6px;
+border-top: 1px solid #eee;
+}
 /* ================= УТИЛИТЫ ================= */
 .hidden {
     display: none !important;

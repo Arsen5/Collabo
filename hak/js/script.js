@@ -3,6 +3,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ПЕРЕМЕННАЯ ДЛЯ DRAG AND DROP ---
     let draggedCard = null;
 
+    // Выпадающее меню экспорта
+    document.getElementById('exportBtn').addEventListener('click', function (e) {
+        const menu = document.getElementById('exportMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        e.stopPropagation();
+    });
+    document.addEventListener('click', function () {
+        const menu = document.getElementById('exportMenu');
+        if (menu) menu.style.display = 'none';
+    });
+
     // --- 1. КЛИКИ ПО КАРТОЧКАМ И ОТКРЫТИЕ САЙДБАРА (ДЕЛЕГИРОВАНИЕ) ---
     const taskSidebar = document.getElementById('task-sidebar');
     let activeCardForEdit = null;
