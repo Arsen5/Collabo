@@ -188,16 +188,21 @@ async function updateTaskStatus(taskId, newStatus) {
 }
 
 async function updateTaskDetails(taskId, updatedData) {
-    console.log('🔧 updateTaskDetails вызвана, ID:', taskId, 'Данные:', updatedData);
-    const response = await authFetch(`${window.API_URL}/tasks/${taskId}`, {
+    const response = await authFetch(`${API_URL}/tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
+        body: JSON.stringify({
+            title: updatedData.title,
+            description: updatedData.description,
+            status: updatedData.status,
+            priority: updatedData.priority,
+            tags: updatedData.tags,
+            dueDate: updatedData.dueDate,
+            assignee: updatedData.assignee,
+            boardId: updatedData.boardId
+        })
     });
-    const result = await response.json();
-    console.log('📦 Результат обновления:', result);
-    if (!response.ok) throw new Error('Ошибка обновления задачи');
-    return result;
+    return await response.json();
 }
 
 function initSignalR() {

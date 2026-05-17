@@ -265,11 +265,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Сохраняем в БД
                 const updatedTask = {
     title: sidebarName.value,
-    description: sidebarDesc.value,
+    description: sidebarDesc.value,      // ← уже есть
     status: sidebarStatusSelect.value === 'To-Do' ? 'todo' : sidebarStatusSelect.value === 'In Progress' ? 'progress' : 'done',
     priority: sidebarPrioritySelect.value,
     tags: sidebarTagsInput.value.split(',').map(t => t.trim()).filter(t => t),
-    dueDate: sidebarDeadlineInput.value || null,
+    dueDate: sidebarDeadlineInput.value || null,   // ← уже есть
     assignee: sidebarExecutorSelect.options[sidebarExecutorSelect.selectedIndex]?.text || '',
     boardId: localStorage.getItem('collabo_current_board_id')
 };
