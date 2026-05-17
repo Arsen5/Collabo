@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,34 +69,52 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = ""
 });
 
-// ========== API ДОСОК ==========
-app.MapGet("/api/boards", async (AppDbContext db) =>
-{
-    var boards = await db.Boards.ToListAsync();
-    return Results.Ok(boards);
-});
+// ========== API ДОСОК (С ПРИВЯЗКОЙ К ПОЛЬЗОВАТЕЛЮ) ==========
 
-app.MapPost("/api/boards", async (Board board, AppDbContext db) =>
+// Получить свои доски
+app.MapGet("/api/boards", async (AppDbContext db, HttpContext httpContext) =>
 {
+    var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (userId == null) return Results.Unauthorized();
+
+    var boards = await db.Boards.Where(b => b.OwnerId == userId).ToListAsync();
+    return Results.Ok(boards);
+}).RequireAuthorization();
+
+// Создать доску (привязка к пользователю)
+app.MapPost("/api/boards", async (Board board, AppDbContext db, HttpContext httpContext) =>
+{
+    var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (userId == null) return Results.Unauthorized();
+
     board.Id = Guid.NewGuid();
     board.CreatedAt = DateTime.UtcNow;
+    board.OwnerId = userId;
     db.Boards.Add(board);
     await db.SaveChangesAsync();
     return Results.Ok(board);
-});
+}).RequireAuthorization();
 
-app.MapDelete("/api/boards/{id}", async (Guid id, AppDbContext db) =>
+// Удалить доску
+app.MapDelete("/api/boards/{id}", async (Guid id, AppDbContext db, HttpContext httpContext) =>
 {
+    var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (userId == null) return Results.Unauthorized();
+
     var board = await db.Boards.FindAsync(id);
     if (board is null) return Results.NotFound();
+    if (board.OwnerId != userId) return Results.Forbid();
+
     var tasks = db.Tasks.Where(t => t.BoardId == id);
     db.Tasks.RemoveRange(tasks);
     db.Boards.Remove(board);
     await db.SaveChangesAsync();
     return Results.Ok();
-});
+}).RequireAuthorization();
 
 // ========== API ЗАДАЧ ==========
+
+// Получить задачи (опционально по доске)
 app.MapGet("/api/tasks", async (AppDbContext db, Guid? boardId) =>
 {
     if (boardId.HasValue)
@@ -103,6 +122,7 @@ app.MapGet("/api/tasks", async (AppDbContext db, Guid? boardId) =>
     return Results.Ok(await db.Tasks.ToListAsync());
 });
 
+// Получить задачи конкретной доски
 app.MapGet("/api/boards/{boardId}/tasks", async (Guid boardId, AppDbContext db) =>
 {
     var tasks = await db.Tasks.Where(t => t.BoardId == boardId).ToListAsync();
@@ -193,11 +213,11 @@ app.MapPost("/api/auth/login", async (LoginRequest request, UserManager<Applicat
     var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
     var tokenDescriptor = new SecurityTokenDescriptor
     {
-        Subject = new System.Security.Claims.ClaimsIdentity(new[]
+        Subject = new ClaimsIdentity(new[]
         {
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email),
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.FullName)
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.FullName)
         }),
         Expires = DateTime.UtcNow.AddDays(7),
         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

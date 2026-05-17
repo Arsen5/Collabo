@@ -282,5 +282,13 @@
 		<script src="../js/api-integration.js"></script>
 		<script src="../js/sidebar-navigation.js"></script>
 		<script src="../js/script.js"></script>
+		<script>
+			// Устанавливаем аватарку из имени пользователя
+			const userName = localStorage.getItem('userName');
+			const avatarEl = document.querySelector('.avatar');
+			if (avatarEl && userName) {
+			avatarEl.textContent = userName.charAt(0).toUpperCase();
+			}
+		</script>
 	</body>
 </html>
