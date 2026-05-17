@@ -1,67 +1,89 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Создание доски</title>
-    <!-- Подключение файла стилей -->
-    <link rel="stylesheet" href="../css/create-board.css">
+	<head>
+		<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>Создание доски</title>
+				<link rel="stylesheet" href="../css/create-board.css">
 </head>
-<body>
+	<body>
 
-    <div class="container">
+		<div class="container">
+			<aside class="sidebar">
+				<div class="sidebar-top">
+					<div class="logo">Collabo</div>
+					<div class="menu">
+						<a href="board.html" class="menu-item">Мои доски</a>
+						<a href="create-board.html" class="menu-item active">+ Создать доску</a>
+					</div>
+				</div>
+				<div class="sidebar-bottom">
+					<a href="auth.html" class="btn-logout" style="text-decoration: none; display: block;">Выйти</a>
+				</div>
+			</aside>
 
-        <!-- Сайдбар -->
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div class="logo">Collabo</div>
-                <div class="menu">
-                    <!-- Сюда тоже автоматически подгрузятся другие доски, а текущий пункт подсветится -->
-                    <a href="#" class="menu-item active">+ Создать доску</a>
-                </div>
-            </div>
+			<main class="main-content">
+				<header class="top-bar">
+					<h1 id="pageTitle">Создание доски</h1>
+					<div class="avatar">A</div>
+				</header>
 
-            <div class="sidebar-bottom">
-                <a href="auth.html" class="btn-logout" style="text-decoration: none; display: block;">Выйти</a>
-            </div>
-        </aside>
-
-        <!-- Основная часть -->
-        <main class="main-content">
-
-            <!-- Верхняя панель -->
-            <header class="top-bar">
-                <h1>Создайте новую доску</h1>
-                <div class="avatar">A</div>
-            </header>
-
-            <!-- Центральная форма -->
-            <div class="form-container">
-
-                <!-- Поле названия -->
-                <div class="form-group">
-                    <h2>Введите название доски</h2>
-                    <input type="text" class="input-large">
+				<div class="form-container">
+					<div class="form-group">
+						<h2>Введите название доски</h2>
+						<input type="text" class="input-large" id="boardNameInput">
                 </div>
 
-                <!-- Поле приглашения -->
-                <div class="form-group spacing-top">
-                    <h2>Добавьте коллег</h2>
-                    <p class="subtitle">Введите email в поле ниже</p>
-                    <div class="invite-row">
-                        <input type="email" class="input-medium">
-                        <button class="btn-invite">Пригласить</button>
-                    </div>
-                </div>
+					<!-- Приглашение по почте -->
+					<div class="form-group spacing-top">
+						<h2>Добавьте коллег</h2>
+						<p class="subtitle">Введите email в поле ниже</p>
+						<div class="invite-row">
+							<input type="email" class="input-medium" id="inviteEmail">
+								<button class="btn-invite" id="inviteBtn">Пригласить</button>
+							</div>
+					</div>
 
-                <!-- Главная кнопка -->
-                <button class="btn-submit">Создать</button>
+					<button class="btn-submit" id="createBoardBtn">Создать</button>
+				</div>
+			</main>
+		</div>
 
-            </div>
-        </main>
-    </div>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.js"></script>
-	<script src="../js/api-integration.js"></script>
-	<script src="../js/sidebar-navigation.js"></script>
-</body>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.js"></script>
+		<script src="../js/api-integration.js"></script>
+		<script src="../js/sidebar-navigation.js"></script>
+
+		<script>
+			document.getElementById('pageTitle').textContent = 'Создание доски';
+
+			// Создание доски
+			document.getElementById('createBoardBtn').addEventListener('click', async () => {
+			const boardName = document.getElementById('boardNameInput').value.trim();
+			if (!boardName) {
+			alert('Введите название доски');
+			return;
+			}
+
+			try {
+			await createBoardOnServer(boardName);
+			alert(`Доска "${boardName}" создана!`);
+			window.location.href = 'board.html';
+			} catch (error) {
+			console.error('Ошибка создания:', error);
+			alert('Ошибка создания доски');
+			}
+			});
+
+			// Приглашение по почте
+			document.getElementById('inviteBtn').addEventListener('click', () => {
+			const email = document.getElementById('inviteEmail').value.trim();
+			if (email) {
+			alert(`Приглашение отправлено на ${email}`);
+			document.getElementById('inviteEmail').value = '';
+			} else {
+			alert('Введите email');
+			}
+			});
+		</script>
+	</body>
 </html>

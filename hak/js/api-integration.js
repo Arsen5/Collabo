@@ -14,7 +14,7 @@ function createTaskCard(task) {
     card.className = 'task-card';
     card.setAttribute('data-id', task.id);
     card.setAttribute('draggable', 'true');
-    const assigneeDisplay = task.assignee ? `Исполнитель: ${task.assignee}` : '';
+    
     if (task.tags && task.tags.includes('urgent')) {
         task.priority = 'high';
     }
@@ -35,11 +35,13 @@ function createTaskCard(task) {
     
     const dueDateDisplay = task.dueDate ? new Date(task.dueDate).toLocaleDateString('ru-RU') : 'Не задан';
     const tagsHtml = (task.tags || []).map(tag => `<span class="task-tag">${escapeHtml(tag)}</span>`).join('');
+    const assigneeHtml = task.assignee && task.assignee !== '' ? `<div class="task-field">Исполнитель: ${escapeHtml(task.assignee)}</div>` : '';
     
     card.innerHTML = `
         <div class="task-title">${escapeHtml(task.title)} <span class="delete-icon" onclick="deleteTaskById('${task.id}')">🗑</span></div>
         <div class="task-field">Срок: ${dueDateDisplay}</div>
         <div class="task-field">Важность: <span class="priority-badge ${priorityClass}">${priorityText}</span></div>
+        ${assigneeHtml}
         <div class="task-tags">${tagsHtml}</div>
     `;
     
@@ -131,7 +133,8 @@ async function createTaskAPI(taskData) {
             priority: taskData.priority || 'medium',
             tags: taskData.tags || [],
             dueDate: formattedDueDate,
-            boardId: currentBoardId
+            boardId: currentBoardId,
+            assignee: taskData.assignee || ''
         })
     });
     if (!response.ok) throw new Error('Ошибка создания');
@@ -308,10 +311,7 @@ function exportToCSV() {
         return;
     }
     
-    // Заголовки
     const headers = ['ID', 'Название', 'Описание', 'Статус', 'Приоритет', 'Теги', 'Дедлайн', 'Создана'];
-    
-    // Данные
     const rows = currentTasks.map(task => [
         task.id,
         `"${(task.title || '').replace(/"/g, '""')}"`,
@@ -323,10 +323,7 @@ function exportToCSV() {
         new Date(task.createdAt).toLocaleString()
     ]);
     
-    // Собираем CSV с разделителем-точкой с запятой (для русской версии Excel)
     const csvContent = [headers, ...rows].map(row => row.join(';')).join('\n');
-    
-    // Добавляем BOM для корректной кодировки
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -346,7 +343,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await renderTasksForBoard(boardId);
     }
     
-    // Фильтры
     const searchInput = document.getElementById('searchInput');
     const priorityFilter = document.getElementById('priorityFilter');
     const statusFilter = document.getElementById('statusFilter');

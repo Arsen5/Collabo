@@ -13,4 +13,6 @@ public class TaskItem
     public string? AssigneeId { get; set; }
     public uint RowVersion { get; set; }
     public Guid? BoardId { get; set; }  // ← ДОБАВИТЬ ЭТУ СТРОКУ
+
+    public string? Assignee { get; set; }
 }

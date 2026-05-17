@@ -104,25 +104,24 @@ async function renderBoardsMenu() {
         deleteBtn.title = 'Удалить доску';
         
         deleteBtn.onclick = async (e) => {
-    e.stopPropagation();
-    if (confirm(`Удалить доску "${board.name}" со всеми задачами?`)) {
-        try {
-            await fetch(`${API_URL}/boards/${board.id}`, { method: 'DELETE' });
-            
-            if (allBoards.length === 1) {
-                // Если удаляем последнюю доску — переходим на страницу создания
-                window.location.href = 'create-board.html';
-            } else {
-                await renderBoardsMenu();
-                const newCurrentId = allBoards.find(b => b.id !== board.id)?.id;
-                if (newCurrentId) await switchToBoard(newCurrentId);
+            e.stopPropagation();
+            if (confirm(`Удалить доску "${board.name}" со всеми задачами?`)) {
+                try {
+                    await fetch(`${API_URL}/boards/${board.id}`, { method: 'DELETE' });
+                    
+                    if (allBoards.length === 1) {
+                        window.location.href = 'create-board.html';
+                    } else {
+                        await renderBoardsMenu();
+                        const newCurrentId = allBoards.find(b => b.id !== board.id)?.id;
+                        if (newCurrentId) await switchToBoard(newCurrentId);
+                    }
+                } catch (error) {
+                    console.error('Ошибка удаления:', error);
+                    alert('Ошибка удаления доски');
+                }
             }
-        } catch (error) {
-            console.error('Ошибка удаления:', error);
-            alert('Ошибка удаления доски');
-        }
-    }
-};
+        };
         
         container.appendChild(boardLink);
         container.appendChild(deleteBtn);
@@ -151,27 +150,7 @@ async function renderBoardsMenu() {
     }
 }
 
-const submitBtn = document.querySelector('.btn-submit');
-const nameInput = document.querySelector('.input-large');
-
-if (submitBtn && nameInput) {
-    submitBtn.addEventListener('click', async () => {
-        const boardName = nameInput.value.trim();
-        if (!boardName) {
-            alert('Введите название доски');
-            return;
-        }
-        
-        try {
-            await createBoardOnServer(boardName);
-            alert(`Доска "${boardName}" создана!`);
-            window.location.href = 'board.html';
-        } catch (error) {
-            console.error('Ошибка создания:', error);
-            alert('Ошибка создания доски');
-        }
-    });
-}
+// НЕТ дублирующего кода создания доски!
 
 document.addEventListener('DOMContentLoaded', () => {
     renderBoardsMenu();
