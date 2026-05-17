@@ -1,638 +1,652 @@
-document.addEventListener('DOMContentLoaded', () => {
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
 
-    // --- ПЕРЕМЕННАЯ ДЛЯ DRAG AND DROP ---
-    let draggedCard = null;
+body {
+    background-color: #fafafa;
+    color: #111;
+    overflow: hidden;
+}
 
-    // Выпадающее меню экспорта
-    document.getElementById('exportBtn').addEventListener('click', function (e) {
-        const menu = document.getElementById('exportMenu');
-        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-        e.stopPropagation();
-    });
-    document.addEventListener('click', function () {
-        const menu = document.getElementById('exportMenu');
-        if (menu) menu.style.display = 'none';
-    });
+.container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
 
-    // --- 1. КЛИКИ ПО КАРТОЧКАМ И ОТКРЫТИЕ САЙДБАРА ---
-    const taskSidebar = document.getElementById('task-sidebar');
-    let activeCardForEdit = null;
+/* ================= САЙДБАР (ЛЕВЫЙ) ================= */
+.sidebar {
+    width: 250px;
+    min-width: 250px;
+    height: 100vh;
+    background-color: #fff;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
 
-    document.addEventListener('click', (e) => {
-        const card = e.target.closest('.task-card');
+.logo {
+    color: #5c5ce6;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 24px 30px;
+    margin-bottom: 10px;
+}
 
-        if (e.target.classList.contains('delete-icon')) {
-            e.stopPropagation();
-            const cardToRemove = e.target.closest('.task-card');
-            if (cardToRemove) {
-                cardToRemove.remove();
-                if (activeCardForEdit === cardToRemove && taskSidebar) {
-                    taskSidebar.classList.add('hidden');
-                }
-            }
-            return;
-        }
+.menu {
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
 
-        if (card) {
-            document.querySelectorAll('.task-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            activeCardForEdit = card;
+.menu-item {
+    display: block;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: #6b6b80;
+    font-size: 14px;
+    border-radius: 6px;
+}
 
-            if (taskSidebar) {
-                const sidebarName = taskSidebar.querySelector('.input-task-name');
-                const sidebarDesc = taskSidebar.querySelector('.textarea-task-desc');
-                const sidebarDeadlineInput = taskSidebar.querySelector('.sidebar-input-deadline');
-                const sidebarExecutorSelect = taskSidebar.querySelector('.sidebar-input-executor');
-                const sidebarPrioritySelect = taskSidebar.querySelector('.sidebar-input-priority');
-                const sidebarStatusSelect = taskSidebar.querySelector('.sidebar-input-status');
-                const sidebarTagsInput = taskSidebar.querySelector('.sidebar-input-tags');
-                const createdDateEl = document.getElementById('sidebar-created-date');
-
-                const titleElement = card.querySelector('.task-title');
-                let titleText = titleElement ? titleElement.textContent.replace('🗑', '').trim() : '';
-
-                const fields = card.querySelectorAll('.task-field');
-                let deadlineText = '';
-                let executorText = 'Не назначен';
-                let priorityText = 'Средний';
-
-                fields.forEach(field => {
-                    const text = field.textContent;
-                    if (text.includes('Срок:')) {
-                        deadlineText = text.replace('Срок:', '').trim();
-                    } else if (text.includes('Исполнитель:')) {
-                        executorText = text.replace('Исполнитель:', '').trim() || 'Не назначен';
-                    } else if (text.includes('Важность:')) {
-                        priorityText = text.replace('Важность:', '').trim() || 'Средний';
-                    }
-                });
-
-                const tagElements = card.querySelectorAll('.task-sidebar-tag, .task-tag');
-                const tagsArray = [];
-                tagElements.forEach(el => tagsArray.push(el.textContent.trim()));
-
-                const savedDesc = card.dataset.description || '';
-
-                if (sidebarName) sidebarName.value = titleText;
-                if (sidebarDesc) sidebarDesc.value = savedDesc;
-
-                if (!card.dataset.createdDate) {
-                    card.dataset.createdDate = new Date().toLocaleDateString('ru-RU');
-                }
-                if (createdDateEl) createdDateEl.innerHTML = `Дата создания: <strong>${card.dataset.createdDate}</strong>`;
-
-                const parentColumn = card.closest('.column');
-                const colTitle = parentColumn ? parentColumn.querySelector('.column-title').textContent.trim() : 'To-Do';
-
-                if (sidebarStatusSelect) {
-                    let optionExists = Array.from(sidebarStatusSelect.options).some(opt => opt.value === colTitle);
-                    if (!optionExists) {
-                        const newOpt = document.createElement('option');
-                        newOpt.value = colTitle;
-                        newOpt.textContent = colTitle;
-                        sidebarStatusSelect.appendChild(newOpt);
-                    }
-                    sidebarStatusSelect.value = colTitle;
-                }
-
-                if (sidebarDeadlineInput) {
-                    sidebarDeadlineInput.value = (deadlineText === 'Не задан' || !deadlineText) ? '' : deadlineText;
-                }
-
-                if (sidebarExecutorSelect) {
-                    let foundOption = false;
-                    for (let i = 0; i < sidebarExecutorSelect.options.length; i++) {
-                        if (sidebarExecutorSelect.options[i].text === executorText) {
-                            sidebarExecutorSelect.selectedIndex = i;
-                            foundOption = true;
-                            break;
-                        }
-                    }
-                    if (!foundOption) sidebarExecutorSelect.selectedIndex = 0;
-                }
-
-                if (sidebarPrioritySelect) {
-                    let foundOption = false;
-                    for (let i = 0; i < sidebarPrioritySelect.options.length; i++) {
-                        if (sidebarPrioritySelect.options[i].text === priorityText) {
-                            sidebarPrioritySelect.selectedIndex = i;
-                            foundOption = true;
-                            break;
-                        }
-                    }
-                    if (!foundOption) sidebarPrioritySelect.selectedIndex = 1;
-                }
-
-                if (sidebarTagsInput) {
-                    sidebarTagsInput.value = tagsArray.join(', ');
-                }
-
-                const sidebarTagsContainer = document.getElementById('sidebar-tags-container');
-                if (sidebarTagsContainer) {
-                    sidebarTagsContainer.innerHTML = '';
-                    tagsArray.forEach(tag => {
-                        if (tag) {
-                            const span = document.createElement('span');
-                            span.className = 'task-sidebar-tag';
-                            span.textContent = tag;
-                            sidebarTagsContainer.appendChild(span);
-                        }
-                    });
-                }
-
-                taskSidebar.classList.remove('hidden');
-            }
-        }
-    });
-
-    // --- Логика кнопки "Закрыть" в сайдбаре ---
-    if (taskSidebar) {
-        const closeSidebar = taskSidebar.querySelector('.close-btn');
-        if (closeSidebar) {
-            closeSidebar.addEventListener('click', () => {
-                taskSidebar.classList.add('hidden');
-                document.querySelectorAll('.task-card').forEach(c => c.classList.remove('active'));
-                activeCardForEdit = null;
-            });
-        }
-
-        // --- Кнопка "Применить изменения" с сохранением в БД ---
-        const applyBtn = taskSidebar.querySelector('.btn-apply-changes');
-        if (applyBtn) {
-            applyBtn.addEventListener('click', async () => {
-                if (!activeCardForEdit) return;
-
-                const sidebarName = taskSidebar.querySelector('.input-task-name');
-                const sidebarDesc = taskSidebar.querySelector('.textarea-task-desc');
-                const sidebarDeadlineInput = taskSidebar.querySelector('.sidebar-input-deadline');
-                const sidebarExecutorSelect = taskSidebar.querySelector('.sidebar-input-executor');
-                const sidebarPrioritySelect = taskSidebar.querySelector('.sidebar-input-priority');
-                const sidebarStatusSelect = taskSidebar.querySelector('.sidebar-input-status');
-                const sidebarTagsInput = taskSidebar.querySelector('.sidebar-input-tags');
-
-                if (sidebarName && sidebarName.value.trim() === "") {
-                    alert("Название задачи не может быть пустым");
-                    return;
-                }
-
-                // Обновляем карточку на клиенте
-                const titleElement = activeCardForEdit.querySelector('.task-title');
-                if (titleElement && sidebarName) {
-                    titleElement.innerHTML = `${sidebarName.value} <span class="delete-icon">🗑</span>`;
-                }
-
-                if (sidebarDesc) {
-                    activeCardForEdit.dataset.description = sidebarDesc.value;
-                }
-
-                if (sidebarDeadlineInput) {
-                    const fields = activeCardForEdit.querySelectorAll('.task-field');
-                    fields.forEach(field => {
-                        if (field.textContent.includes('Срок:')) {
-                            field.textContent = `Срок: ${sidebarDeadlineInput.value || 'Не задан'}`;
-                        }
-                    });
-                }
-
-                if (sidebarExecutorSelect) {
-                    const selectedText = sidebarExecutorSelect.options[sidebarExecutorSelect.selectedIndex].text;
-                    const fields = activeCardForEdit.querySelectorAll('.task-field');
-                    fields.forEach(field => {
-                        if (field.textContent.includes('Исполнитель:')) {
-                            field.textContent = `Исполнитель: ${sidebarExecutorSelect.value ? selectedText : 'Не назначен'}`;
-                        }
-                    });
-                }
-
-                if (sidebarPrioritySelect) {
-                    const selectedPriorityText = sidebarPrioritySelect.options[sidebarPrioritySelect.selectedIndex].text;
-                    const fields = activeCardForEdit.querySelectorAll('.task-field');
-                    fields.forEach(field => {
-                        if (field.textContent.includes('Важность:')) {
-                            let priorityClass = 'priority-medium';
-                            if (selectedPriorityText === 'Низкий') priorityClass = 'priority-low';
-                            if (selectedPriorityText === 'Высокий') priorityClass = 'priority-high';
-                            field.innerHTML = `Важность: <span class="priority-badge ${priorityClass}">${selectedPriorityText}</span>`;
-                        }
-                    });
-                }
-
-                if (sidebarTagsInput) {
-                    const oldTags = activeCardForEdit.querySelectorAll('.task-sidebar-tag, .task-tag');
-                    oldTags.forEach(el => el.remove());
-                    const tagsArray = sidebarTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-                    tagsArray.forEach(tag => {
-                        const tagSpan = document.createElement('span');
-                        tagSpan.className = 'task-sidebar-tag';
-                        tagSpan.textContent = tag;
-                        activeCardForEdit.appendChild(tagSpan);
-                    });
-                    const sidebarTagsContainer = document.getElementById('sidebar-tags-container');
-                    if (sidebarTagsContainer) {
-                        sidebarTagsContainer.innerHTML = '';
-                        tagsArray.forEach(tag => {
-                            const span = document.createElement('span');
-                            span.className = 'task-sidebar-tag';
-                            span.textContent = tag;
-                            sidebarTagsContainer.appendChild(span);
-                        });
-                    }
-                }
-
-                if (sidebarStatusSelect) {
-                    const targetColumnTitle = sidebarStatusSelect.value;
-                    const currentColumn = activeCardForEdit.closest('.column');
-                    const currentColumnTitle = currentColumn.querySelector('.column-title').textContent.trim();
-                    if (targetColumnTitle !== currentColumnTitle) {
-                        const allColumns = document.querySelectorAll('.column');
-                        let targetColumn = null;
-                        allColumns.forEach(col => {
-                            if (col.querySelector('.column-title').textContent.trim() === targetColumnTitle) {
-                                targetColumn = col;
-                            }
-                        });
-                        if (targetColumn) {
-                            const targetBtn = targetColumn.querySelector('.add-task-btn');
-                            if (targetColumnTitle === 'Done') {
-                                activeCardForEdit.classList.add('done');
-                            } else {
-                                activeCardForEdit.classList.remove('done');
-                            }
-                            if (targetBtn) {
-                                targetColumn.insertBefore(activeCardForEdit, targetBtn);
-                            } else {
-                                targetColumn.appendChild(activeCardForEdit);
-                            }
-                        }
-                    }
-                }
-
-                // ========== СОХРАНЕНИЕ В БД ==========
-                const updatedTask = {
-                    title: sidebarName.value,
-                    description: sidebarDesc.value,
-                    status: sidebarStatusSelect.value === 'To-Do' ? 'todo' : sidebarStatusSelect.value === 'In Progress' ? 'progress' : 'done',
-                    priority: sidebarPrioritySelect.value,
-                    tags: sidebarTagsInput.value.split(',').map(t => t.trim()).filter(t => t),
-                    dueDate: sidebarDeadlineInput.value || null,
-                    assignee: sidebarExecutorSelect.options[sidebarExecutorSelect.selectedIndex]?.text || ''
-                };
-
-                try {
-                    if (typeof updateTaskDetails !== 'undefined') {
-                        await updateTaskDetails(activeCardForEdit.dataset.id, updatedTask);
-                        console.log('✅ Задача обновлена в БД');
-                    } else {
-                        console.warn('updateTaskDetails не найдена');
-                    }
-                } catch (error) {
-                    console.error('Ошибка сохранения в БД:', error);
-                    alert('Не удалось сохранить изменения в БД');
-                }
-
-                alert("Изменения успешно сохранены!");
-            });
-        }
+    .menu-item.active {
+        background-color: #f0f4ff;
+        color: #5c5ce6;
     }
 
-    // --- DRAG AND DROP ---
-    document.addEventListener('dragstart', (e) => {
-        const card = e.target.closest('.task-card');
-        if (card) {
-            draggedCard = card;
-            setTimeout(() => card.style.opacity = '0.5', 0);
-        }
-    });
+.sidebar-bottom {
+    padding: 24px 30px;
+    border-top: 1px solid #e0e0e0;
+}
 
-    document.addEventListener('dragend', (e) => {
-        const card = e.target.closest('.task-card');
-        if (card) {
-            card.style.opacity = '1';
-            draggedCard = null;
-        }
-    });
+.btn-logout {
+    background: none;
+    border: none;
+    color: #6b6b80;
+    font-size: 14px;
+    cursor: pointer;
+}
 
-    const mainBoardArea = document.querySelector('.board-area');
-    if (mainBoardArea) {
-        mainBoardArea.addEventListener('dragover', (e) => e.preventDefault());
-        mainBoardArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const targetColumn = e.target.closest('.column');
-            if (targetColumn && draggedCard) {
-                const columnTitle = targetColumn.querySelector('.column-title').textContent.trim();
-                if (columnTitle === 'Done') {
-                    draggedCard.classList.add('done');
-                } else {
-                    draggedCard.classList.remove('done');
-                }
-                const targetBtn = targetColumn.querySelector('.add-task-btn');
-                if (targetBtn) {
-                    targetColumn.insertBefore(draggedCard, targetBtn);
-                } else {
-                    targetColumn.appendChild(draggedCard);
-                }
-            }
-        });
+/* ================= ОСНОВНОЙ КОНТЕНТ И ШАПКА ================= */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.top-bar {
+    height: 76px;
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    flex-shrink: 0;
+}
+
+    .top-bar h1 {
+        font-size: 26px;
+        font-weight: 700;
+        color: #1a1a2e;
     }
 
-    // --- 2. ДОБАВИТЬ СТОЛБЕЦ ---
-    const openAddColBtn = document.getElementById('open-add-column-btn');
-    const addColModal = document.getElementById('add-column-modal');
-    const columnsContainer = document.querySelector('.board-columns-container') || document.querySelector('.board-area');
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #f0f4ff;
+    color: #5c5ce6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
 
-    if (openAddColBtn && addColModal) {
-        openAddColBtn.addEventListener('click', () => addColModal.classList.remove('hidden'));
-        addColModal.querySelector('.modal-close').addEventListener('click', () => addColModal.classList.add('hidden'));
-        addColModal.addEventListener('click', (e) => { if (e.target === addColModal) addColModal.classList.add('hidden'); });
+/* ================= РАБОЧАЯ ОБЛАСТЬ ДОСКИ ================= */
+.board-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
 
-        const submitColumnBtn = addColModal.querySelector('.modal-submit-btn');
-        if (submitColumnBtn) {
-            submitColumnBtn.addEventListener('click', () => {
-                const modalInputs = addColModal.querySelectorAll('.modal-input');
-                const columnNameInput = modalInputs[0];
-                const roleSelect = modalInputs[1];
-                const sendNotifySelect = modalInputs[2];
-                const notifyTypeSelect = modalInputs[3];
+.board-columns-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: flex-start;
+    flex-shrink: 0;
+}
 
-                if (!columnNameInput || !columnNameInput.value.trim()) {
-                    alert('Пожалуйста, введите название столбца');
-                    return;
-                }
+.column {
+    width: 280px;
+    background-color: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-shrink: 0;
+    max-height: 100%;
+    overflow-y: auto;
+}
 
-                const titleText = columnNameInput.value.trim();
-                const newColumn = document.createElement('div');
-                newColumn.className = 'column';
-                newColumn.innerHTML = `
-                    <div class="column-header">
-                        <span class="column-title">${titleText}</span>
-                        <span class="column-edit">Изменить</span>
-                    </div>
-                    <button class="add-task-btn">+ Добавить задачу</button>
-                `;
-                newColumn.dataset.allowedRole = roleSelect ? roleSelect.value : 'all';
-                newColumn.dataset.sendNotifications = sendNotifySelect ? sendNotifySelect.value : 'yes';
-                newColumn.dataset.notificationType = notifyTypeSelect ? notifyTypeSelect.value : 'email';
+.column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0 4px;
+}
 
-                const sidebarStatusSelect = taskSidebar ? taskSidebar.querySelector('.sidebar-input-status') : null;
-                if (sidebarStatusSelect) {
-                    const newOpt = document.createElement('option');
-                    newOpt.value = titleText;
-                    newOpt.textContent = titleText;
-                    sidebarStatusSelect.appendChild(newOpt);
-                }
+.column-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #4b5563;
+}
 
-                if (columnsContainer) columnsContainer.appendChild(newColumn);
-                columnNameInput.value = '';
-                if (roleSelect) roleSelect.selectedIndex = 0;
-                if (sendNotifySelect) sendNotifySelect.selectedIndex = 0;
-                if (notifyTypeSelect) notifyTypeSelect.selectedIndex = 0;
-                addColModal.classList.add('hidden');
-            });
-        }
+.column-edit {
+    font-size: 12px;
+    color: #9ca3af;
+    cursor: pointer;
+}
+
+.add-task-btn {
+    width: 100%;
+    height: 44px;
+    background-color: #f5f6f8;
+    border: 1px solid #b0b0b0;
+    border-radius: 12px;
+    color: #6b7280;
+    font-size: 13px;
+    text-align: left;
+    padding: 0 16px;
+    cursor: pointer;
+}
+
+.add-task-text {
+    font-size: 12px;
+    color: #6b7280;
+    cursor: pointer;
+    margin-top: 8px;
+    padding-left: 4px;
+    background: none;
+    border: none;
+    text-align: left;
+}
+
+.board-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 20px;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+.action-light {
+    font-size: 13px;
+    color: #6b7280;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.action-bold {
+    font-size: 13px;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.column-wrapper {
+    width: 280px;
+    background-color: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ================= КАРТОЧКИ ЗАДАЧ ================= */
+.task-card {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+    .task-card.active {
+        border-color: #5c5ce6 !important;
+        box-shadow: 0 0 0 1px #5c5ce6;
     }
 
-    // --- 3. ПАРАМЕТРЫ ДОСКИ ---
-    const openParamsBtn = document.getElementById('open-board-params-btn');
-    const paramsModal = document.getElementById('board-params-modal');
-    let globalBoardSettings = {
-        adminEmail: '',
-        sendNotifications: 'yes',
-        notificationPeriod: 'instantly',
-        notificationTemplate: ''
-    };
-
-    if (openParamsBtn && paramsModal) {
-        openParamsBtn.addEventListener('click', () => {
-            const inputs = paramsModal.querySelectorAll('.modal-input, textarea.modal-input');
-            if (inputs.length >= 4) {
-                inputs[0].value = globalBoardSettings.adminEmail;
-                inputs[1].value = globalBoardSettings.sendNotifications;
-                inputs[2].value = globalBoardSettings.notificationPeriod;
-                inputs[3].value = globalBoardSettings.notificationTemplate;
-            }
-            paramsModal.classList.remove('hidden');
-        });
-
-        paramsModal.querySelector('.modal-close').addEventListener('click', () => paramsModal.classList.add('hidden'));
-        paramsModal.addEventListener('click', (e) => { if (e.target === paramsModal) paramsModal.classList.add('hidden'); });
-
-        const saveParamsBtn = paramsModal.querySelector('.modal-submit-btn');
-        if (saveParamsBtn) {
-            saveParamsBtn.addEventListener('click', () => {
-                const inputs = paramsModal.querySelectorAll('.modal-input, textarea.modal-input');
-                const emailValue = inputs[0].value.trim();
-                const sendNotifyValue = inputs[1].value;
-                const periodValue = inputs[2].value;
-                const templateValue = inputs[3].value.trim();
-                if (emailValue && !emailValue.includes('@')) {
-                    alert('Пожалуйста, введите корректный Email администратора');
-                    return;
-                }
-                globalBoardSettings.adminEmail = emailValue;
-                globalBoardSettings.sendNotifications = sendNotifyValue;
-                globalBoardSettings.notificationPeriod = periodValue;
-                globalBoardSettings.notificationTemplate = templateValue;
-                console.log('Глобальные настройки доски успешно сохранены:', globalBoardSettings);
-                alert('Глобальные параметры доски успешно сохранены!');
-                paramsModal.classList.add('hidden');
-            });
-        }
+    .task-card.done {
+        background-color: #dcfce7;
+        border-color: #bbf7d0;
     }
 
-    // --- 4. СОЗДАНИЕ ЗАДАЧИ ---
-    const addTaskModal = document.getElementById('add-task-modal');
-    let currentColumn = null;
-    const currentBoardAreaModal = document.querySelector('.board-area');
-    if (currentBoardAreaModal) {
-        currentBoardAreaModal.addEventListener('click', (e) => {
-            if (e.target.classList.contains('add-task-btn')) {
-                currentColumn = e.target.closest('.column');
-                if (addTaskModal) addTaskModal.classList.remove('hidden');
-            }
-        });
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.task-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
+    margin-bottom: 8px;
+}
+
+.delete-icon, .task-delete {
+    float: right;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.task-field, .task-detail {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.task-tag {
+    display: inline-block;
+    background-color: #e0e7ff;
+    color: #4f46e5;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    width: max-content;
+}
+
+/* ================= БОКОВАЯ ПАНЕЛЬ ЗАДАЧ (СПРАВА) ================= */
+.sidebar-right {
+    position: fixed;
+    top: 76px;
+    right: 0;
+    width: 380px;
+    height: calc(100vh - 76px);
+    background: #fff;
+    border-left: 1px solid #e0e0e0;
+    padding: 24px 32px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.close-btn {
+    align-self: flex-end;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4b5563;
+    cursor: pointer;
+    margin-bottom: 20px;
+    background: none;
+    border: none;
+}
+
+.field-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 12px;
+}
+
+.input-task-name, .textarea-task-desc {
+    width: 100%;
+    border: 1px solid #6b7280;
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 14px;
+    outline: none;
+}
+
+.input-task-name {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #6b7280;
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 16px;
+}
+
+.textarea-task-desc {
+    width: 100%;
+    height: 140px;
+    border: 1px solid #6b7280;
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 14px;
+    outline: none;
+    resize: none;
+    margin-bottom: 20px;
+}
+
+.task-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.task-info-item {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.task-sidebar-tag {
+    display: inline-block;
+    background-color: #e0e7ff;
+    color: #4f46e5;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-top: 8px;
+    width: max-content;
+}
+
+.btn-apply-changes {
+    margin-top: auto;
+    align-self: center;
+    background-color: #6366f1;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    width: 180px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* ================= МОДАЛЬНЫЕ ОКНА ================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-container {
+    background-color: #f3f4f6;
+    width: 520px;
+    border-radius: 12px;
+    padding: 24px 40px 40px 40px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.modal-close {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: #4b5563;
+    cursor: pointer;
+}
+
+.modal-form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.modal-label {
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #000;
+    text-align: center;
+}
+
+.modal-input {
+    width: 360px;
+    height: 38px;
+    border: 1px solid #9ca3af;
+    border-radius: 6px;
+    padding: 0 10px;
+    font-size: 14px;
+    color: #4b5563;
+    outline: none;
+    background-color: #ffffff;
+    appearance: auto;
+}
+
+textarea.modal-input {
+    height: auto;
+    font-family: inherit;
+    padding-top: 10px;
+}
+
+.modal-submit-btn {
+    background-color: #6366f1;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    width: 240px;
+    height: 52px;
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    align-self: center;
+    margin-top: 40px;
+}
+
+.modal-admin {
+    height: 540px;
+    padding-top: 60px;
+}
+
+.modal-admin-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 60px;
+}
+
+.modal-title-main {
+    font-size: 20px;
+    font-weight: 700;
+    color: #000000;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.modal-subtitle {
+    font-size: 15px;
+    color: #4b5b76;
+    margin-bottom: 24px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.btn-save {
+    margin-top: auto;
+    margin-bottom: 20px;
+}
+.priority-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.priority-low {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}
+
+.priority-medium {
+    background-color: #fef9c3;
+    color: #a16207;
+}
+
+.priority-high {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+/* Просроченная задача */
+.task-overdue {
+    border: 2px solid #dc3545 !important;
+    background: #fff5f5 !important;
+}
+
+.task-overdue .task-title {
+    color: #dc3545 !important;
+}
+.task-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.task-tag {
+    background: #e2e8f0;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    color: #475569;
+}
+.export-dropdown:hover #exportMenu {
+    display: block !important;
+}
+.export-dropdown div:hover {
+    background-color: #f0f0f0;
+}
+/*фильты*/
+.filter-bar {
+display: flex;
+gap: 15px;
+padding: 10px 20px;
+background: #fff;
+border-bottom: 1px solid #e0e0e0;
+flex-wrap: wrap;
+align-items: center;
+}
+
+.filter-bar input, .filter-bar select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+.filter-bar input {
+    width: 200px;
+}
+
+.export-btn {
+background: #4f46e5;
+color: white;
+border: none;
+padding: 8px 16px;
+border-radius: 6px;
+cursor: pointer;
+}
+
+.export-btn:hover {
+    background: #6366f1;
+}
+
+.export-dropdown {
+position: relative;
+display: inline-block;
+}
+
+.export-menu {
+display: none;
+position: absolute;
+right: 0;
+top: 100%;
+background: white;
+border: 1px solid #ccc;
+border-radius: 6px;
+z-index: 100;
+min-width: 150px;
+box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.export-menu div {
+padding: 8px 12px;
+cursor: pointer;
+}
+
+.export-menu div:hover {
+background-color: #f0f0f0;
+}
+
+.export-menu div:first-child {
+border-radius: 6px 6px 0 0;
+}
+
+.export-menu div:last-child {
+border-radius: 0 0 6px 6px;
+border-top: 1px solid #eee;
+}
+/* ================= УТИЛИТЫ ================= */
+.hidden {
+    display: none !important;
+}
+<style>
+    .menu-item {
+        color: #1f2937 !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
     }
-
-    const closeModalBtn = addTaskModal ? addTaskModal.querySelector('.modal-close') : null;
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', () => {
-            addTaskModal.classList.add('hidden');
-            currentColumn = null;
-        });
+    .board-item .menu-item {
+        color: #1f2937 !important;
     }
-
-    if (addTaskModal) {
-        addTaskModal.addEventListener('click', (e) => {
-            if (e.target === addTaskModal) {
-                addTaskModal.classList.add('hidden');
-                currentColumn = null;
-            }
-        });
+    .menu-item.active {
+        background-color: #eef2ff !important;
+        color: #4f46e5 !important;
     }
-
-    const submitTaskButton = addTaskModal ? addTaskModal.querySelector('.modal-submit-btn') : null;
-    if (submitTaskButton) {
-        submitTaskButton.addEventListener('click', () => {
-            if (!currentColumn) return;
-
-            const nameInput = addTaskModal.querySelector('input[type="text"]:not([placeholder*="design"])');
-            const descInput = addTaskModal.querySelector('textarea');
-            const selects = addTaskModal.querySelectorAll('select');
-            const executorSelect = selects[0];
-            const prioritySelect = selects[1];
-            const dateInput = addTaskModal.querySelector('input[type="date"]');
-            const tagsInput = addTaskModal.querySelector('input[placeholder*="design"]');
-
-            if (!nameInput || !nameInput.value.trim()) {
-                alert('Пожалуйста, введите название задачи');
-                return;
-            }
-
-            const executorText = executorSelect && executorSelect.selectedIndex >= 0 ? executorSelect.options[executorSelect.selectedIndex].text : 'Не назначен';
-            const priorityText = prioritySelect && prioritySelect.selectedIndex >= 0 ? prioritySelect.options[prioritySelect.selectedIndex].text : 'Средний';
-            const initialTags = tagsInput && tagsInput.value ? tagsInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
-            const tagsHTML = initialTags.map(tag => `<span class="task-sidebar-tag">${tag}</span>`).join('');
-            let initialPriorityClass = 'priority-medium';
-            if (priorityText === 'Низкий') initialPriorityClass = 'priority-low';
-            if (priorityText === 'Высокий') initialPriorityClass = 'priority-high';
-
-            const newTaskCard = document.createElement('div');
-            newTaskCard.className = 'task-card';
-            newTaskCard.setAttribute('draggable', 'true');
-            const columnTitle = currentColumn.querySelector('.column-title').textContent.trim();
-            if (columnTitle === 'Done') newTaskCard.classList.add('done');
-            newTaskCard.dataset.description = descInput ? descInput.value : '';
-            newTaskCard.dataset.createdDate = new Date().toLocaleDateString('ru-RU');
-
-            newTaskCard.innerHTML = `
-                <div class="task-title">${nameInput.value} <span class="delete-icon">🗑</span></div>
-                <div class="task-field">Срок: ${dateInput && dateInput.value ? dateInput.value : 'Не задан'}</div>
-                <div class="task-field">Исполнитель: ${executorSelect && executorSelect.value ? executorText : 'Не назначен'}</div>
-                <div class="task-field">Важность: <span class="priority-badge ${initialPriorityClass}">${priorityText}</span></div>
-                ${tagsHTML}
-            `;
-            const targetBtn = currentColumn.querySelector('.add-task-btn');
-            if (targetBtn) currentColumn.insertBefore(newTaskCard, targetBtn);
-            else currentColumn.appendChild(newTaskCard);
-
-            nameInput.value = '';
-            if (descInput) descInput.value = '';
-            if (executorSelect) executorSelect.selectedIndex = 0;
-            if (dateInput) dateInput.value = '';
-            if (prioritySelect) prioritySelect.selectedIndex = 1;
-            if (tagsInput) tagsInput.value = '';
-            addTaskModal.classList.add('hidden');
-            currentColumn = null;
-        });
+    .sidebar .menu a {
+        color: #1f2937 !important;
+        text-decoration: none;
     }
-
-    // --- 5. РЕДАКТИРОВАНИЕ СТОЛБЦА ---
-    const editColModal = document.getElementById('edit-column-modal');
-    let currentColumnToEdit = null;
-
-    if (editColModal) {
-        const boardContainerEdit = document.querySelector('.board-area');
-        if (boardContainerEdit) {
-            boardContainerEdit.addEventListener('click', (e) => {
-                if (e.target.classList.contains('column-edit')) {
-                    currentColumnToEdit = e.target.closest('.column');
-                    if (!currentColumnToEdit) return;
-                    const colTitleElement = currentColumnToEdit.querySelector('.column-title');
-                    const colTitleText = colTitleElement ? colTitleElement.textContent.trim() : '';
-                    const allowedRole = currentColumnToEdit.dataset.allowedRole || 'all';
-                    const hasAddBtn = currentColumnToEdit.querySelector('.add-task-btn') ? 'yes' : 'no';
-                    const nameInput = editColModal.querySelector('.id-col-name');
-                    const roleSelect = editColModal.querySelector('.id-col-role');
-                    const btnToggleSelect = editColModal.querySelector('.id-col-btn-toggle');
-                    if (nameInput) nameInput.value = colTitleText;
-                    if (roleSelect) roleSelect.value = allowedRole;
-                    if (btnToggleSelect) btnToggleSelect.value = hasAddBtn;
-                    editColModal.classList.remove('hidden');
-                }
-            });
-        }
-
-        editColModal.querySelector('.modal-close').addEventListener('click', () => {
-            editColModal.classList.add('hidden');
-            currentColumnToEdit = null;
-        });
-        editColModal.addEventListener('click', (e) => {
-            if (e.target === editColModal) {
-                editColModal.classList.add('hidden');
-                currentColumnToEdit = null;
-            }
-        });
-
-        const saveColBtn = editColModal.querySelector('.id-save-col-btn');
-        if (saveColBtn) {
-            saveColBtn.addEventListener('click', () => {
-                if (!currentColumnToEdit) return;
-                const nameInput = editColModal.querySelector('.id-col-name');
-                const roleSelect = editColModal.querySelector('.id-col-role');
-                const btnToggleSelect = editColModal.querySelector('.id-col-btn-toggle');
-                const newName = nameInput ? nameInput.value.trim() : '';
-                if (!newName) {
-                    alert('Название столбца не может быть пустым');
-                    return;
-                }
-                const colTitleElement = currentColumnToEdit.querySelector('.column-title');
-                if (colTitleElement) {
-                    const oldName = colTitleElement.textContent.trim();
-                    colTitleElement.textContent = newName;
-                    if (oldName !== newName) {
-                        const sidebarStatusSelect = document.querySelector('.sidebar-input-status');
-                        if (sidebarStatusSelect) {
-                            Array.from(sidebarStatusSelect.options).forEach(opt => {
-                                if (opt.value === oldName) {
-                                    opt.value = newName;
-                                    opt.textContent = newName;
-                                }
-                            });
-                        }
-                    }
-                }
-                if (roleSelect) currentColumnToEdit.dataset.allowedRole = roleSelect.value;
-                if (btnToggleSelect) {
-                    let taskBtn = currentColumnToEdit.querySelector('.add-task-btn');
-                    if (btnToggleSelect.value === 'yes') {
-                        if (!taskBtn) {
-                            taskBtn = document.createElement('button');
-                            taskBtn.className = 'add-task-btn';
-                            taskBtn.textContent = '+ Добавить задачу';
-                            currentColumnToEdit.appendChild(taskBtn);
-                        }
-                    } else {
-                        if (taskBtn) taskBtn.remove();
-                    }
-                }
-                editColModal.classList.add('hidden');
-                currentColumnToEdit = null;
-                alert('Параметры столбца успешно обновлены!');
-            });
-        }
-
-        const deleteColBtn = editColModal.querySelector('.id-delete-col-btn');
-        if (deleteColBtn) {
-            deleteColBtn.addEventListener('click', () => {
-                if (!currentColumnToEdit) return;
-                const colTitleElement = currentColumnToEdit.querySelector('.column-title');
-                const colName = colTitleElement ? colTitleElement.textContent.trim() : 'этот';
-                if (confirm(`Вы уверены, что хотите полностью удалить столбец "${colName}" вместе со всеми его задачами?`)) {
-                    const sidebarStatusSelect = document.querySelector('.sidebar-input-status');
-                    if (sidebarStatusSelect) {
-                        Array.from(sidebarStatusSelect.options).forEach(opt => {
-                            if (opt.value === colName) opt.remove();
-                        });
-                    }
-                    if (taskSidebar && !taskSidebar.classList.contains('hidden') && activeCardForEdit) {
-                        if (activeCardForEdit.closest('.column') === currentColumnToEdit) {
-                            taskSidebar.classList.add('hidden');
-                        }
-                    }
-                    currentColumnToEdit.remove();
-                    editColModal.classList.add('hidden');
-                    currentColumnToEdit = null;
-                }
-            });
-        }
-    }
-});
+</style>
