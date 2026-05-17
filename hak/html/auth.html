@@ -78,11 +78,16 @@
 			});
 			if (res.ok) {
 			const data = await res.json();
+			console.log('Данные от сервера:', data);
+			console.log('Email для сохранения:', email);
 			localStorage.setItem('token', data.token);
 			localStorage.setItem('userId', data.userId);
 			localStorage.setItem('userName', data.userName);
+			localStorage.setItem('userEmail', email);
+			console.log('После сохранения, userEmail:', localStorage.getItem('userEmail'));
 			window.location.href = 'board.html';
 			} else {
+			console.log('Ошибка входа, статус:', res.status);
 			alert('Неверный email или пароль');
 			}
 			} else {

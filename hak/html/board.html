@@ -227,6 +227,11 @@
 					<label class="modal-label">Шаблон уведомлений</label>
 					<textarea class="modal-input" rows="4" placeholder="Текст шаблона..."></textarea>
 				</div>
+				<div class="modal-form-group">
+					<label class="modal-label">Пригласить пользователя</label>
+					<input type="email" id="inviteEmailParam" class="modal-input" placeholder="email@example.com">
+						<button id="inviteFromParamsBtn" class="modal-submit-btn" style="margin-top: 10px;">Отправить приглашение</button>
+					</div>
 				<button class="modal-submit-btn">Сохранить параметры</button>
 			</div>
 		</div>
@@ -340,6 +345,42 @@
 			function closeProfileModal() {
 			document.getElementById('profile-modal').classList.add('hidden');
 			}
+		</script>
+		<script>
+			// Приглашение из параметров доски
+			document.getElementById('inviteFromParamsBtn').addEventListener('click', async () => {
+			const email = document.getElementById('inviteEmailParam').value.trim();
+			if (!email) {
+			alert('Введите email');
+			return;
+			}
+
+			const currentBoardId = localStorage.getItem('collabo_current_board_id');
+			if (!currentBoardId) {
+			alert('Доска не выбрана');
+			return;
+			}
+
+			const token = localStorage.getItem('token');
+			const API_URL = window.location.origin + "/api";
+			const response = await fetch(`${API_URL}/boards/${currentBoardId}/invite`, {
+			method: 'POST',
+			headers: {
+			'Content-Type': 'application/json',
+			'Authorization': `Bearer ${token}`
+			},
+			body: JSON.stringify({ email })
+			});
+
+			if (response.ok) {
+			alert(`Приглашение отправлено на ${email}`);
+			document.getElementById('inviteEmailParam').value = '';
+			document.getElementById('board-params-modal').classList.add('hidden');
+			} else {
+			const error = await response.text();
+			alert('Ошибка: ' + error);
+			}
+			});
 		</script>
 	</body>
 </html>
