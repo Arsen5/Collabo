@@ -9,6 +9,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<TaskItem> Tasks { get; set; }
+    public DbSet<Board> Boards { get; set; }  // ← ДОБАВИТЬ
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,10 +25,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                 v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
             );
 
-        // Связь задачи с пользователем
-        modelBuilder.Entity<TaskItem>()
-            .HasOne<ApplicationUser>()
-            .WithMany()
-            .HasForeignKey(t => t.AssigneeId);
+
+
+        // Настройка для Board
+        modelBuilder.Entity<Board>().ToTable("boards");
+        modelBuilder.Entity<Board>().HasKey(b => b.Id);
     }
 }

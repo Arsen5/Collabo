@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Создание доски</title>
     <!-- Подключение файла стилей -->
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/create-board.css">
 </head>
 <body>
 
@@ -16,13 +16,13 @@
             <div class="sidebar-top">
                 <div class="logo">Collabo</div>
                 <div class="menu">
-                    <!-- Активный пункт меню -->
-                    <a href="#" class="menu-item active">Создать доску</a>
+                    <!-- Сюда тоже автоматически подгрузятся другие доски, а текущий пункт подсветится -->
+                    <a href="#" class="menu-item active">+ Создать доску</a>
                 </div>
             </div>
 
             <div class="sidebar-bottom">
-                <button class="btn-logout">Выйти</button>
+                <a href="auth.html" class="btn-logout" style="text-decoration: none; display: block;">Выйти</a>
             </div>
         </aside>
 
@@ -60,6 +60,6 @@
             </div>
         </main>
     </div>
-
+    <script src="../js/sidebar-navigation.js"></script>
 </body>
 </html>

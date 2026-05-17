@@ -1,27 +1,36 @@
 ﻿<!DOCTYPE html>
 <html lang="ru">
-	<head>
-		<meta charset="UTF-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-				<title>Collabo - Вход</title>
-				<link rel="stylesheet" href="../css/auth.css">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collabo - Вход</title>
+    <!-- Стили только для страницы авторизации -->
+    <link rel="stylesheet" href="../css/auth.css">
 </head>
-	<body>
-		<div class="auth-page">
-			<div class="auth-card">
-				<h1 class="auth-title">Вход в Collabo</h1>
-				<form onsubmit="event.preventDefault(); window.location.href='MainScreen.html';">
-					<div class="form-group" style="margin-bottom: 16px;">
-						<label class="form-label">Email</label>
-						<input type="email" class="form-input" placeholder="email@example.com" required="">
+<body>
+
+    <div class="auth-page">
+        <div class="auth-card">
+            <h1 class="auth-title" id="title">Вход в Collabo</h1>
+
+            <form id="authForm" onsubmit="event.preventDefault(); window.location.href='create-board.html';">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" placeholder="email@example.com" required>
                 </div>
-					<div class="form-group" style="margin-bottom: 16px;">
-						<label class="form-label">Пароль</label>
-						<input type="password" class="form-input" placeholder="••••••••" required="">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" class="form-input" placeholder="••••••••" required>
                 </div>
-					<button type="submit" class="auth-btn">Войти</button>
-				</form>
-			</div>
-		</div>
-	</body>
+                <button type="submit" class="auth-btn">Войти</button>
+            </form>
+
+            <div class="switch-link" id="switchText">
+                Нет аккаунта? <a href="#" onclick="toggleAuth()">Зарегистрироваться</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/auth-script.js"></script>
+</body>
 </html>
