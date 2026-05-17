@@ -54,7 +54,13 @@ function createTaskCard(task) {
     
     const dueDateDisplay = task.dueDate ? new Date(task.dueDate).toLocaleDateString('ru-RU') : 'Не задан';
     const tagsHtml = (task.tags || []).map(tag => `<span class="task-tag">${escapeHtml(tag)}</span>`).join('');
-    const assigneeHtml = task.assignee && task.assignee !== '' ? `<div class="task-field">Исполнитель: ${escapeHtml(task.assignee)}</div>` : '';
+    
+    let assigneeText = 'Не назначен';
+    if (task.assignee === 'user1') assigneeText = 'Иван Иванов';
+    else if (task.assignee === 'user2') assigneeText = 'Анна Смирнова';
+    else if (task.assignee && task.assignee !== '') assigneeText = task.assignee;
+    
+    const assigneeHtml = `<div class="task-field">Исполнитель: ${assigneeText}</div>`;
     
     card.innerHTML = `
         <div class="task-title">${escapeHtml(task.title)} <span class="delete-icon" onclick="deleteTaskById('${task.id}')">🗑</span></div>
@@ -179,6 +185,19 @@ async function updateTaskStatus(taskId, newStatus) {
     });
 }
 
+async function updateTaskDetails(taskId, updatedData) {
+    console.log('🔧 updateTaskDetails вызвана, ID:', taskId, 'Данные:', updatedData);
+    const response = await authFetch(`${window.API_URL}/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+    });
+    const result = await response.json();
+    console.log('📦 Результат обновления:', result);
+    if (!response.ok) throw new Error('Ошибка обновления задачи');
+    return result;
+}
+
 function initSignalR() {
     const connection = new signalR.HubConnectionBuilder()
         .withUrl(window.location.origin + "/tasksHub")
@@ -233,7 +252,7 @@ window.submitTask = async function() {
     if (isUrgent) priority = 'high';
     
     const dueDate = dateInput?.value || null;
-    const assignee = assigneeSelect?.value || '';
+    const assignee = assigneeSelect?.options[assigneeSelect.selectedIndex]?.text || '';
     
     const currentBoardId = getCurrentBoardId();
     
@@ -288,16 +307,23 @@ function setupDragAndDrop() {
     });
     
     document.addEventListener('dragstart', e => {
-        const card = e.target.closest('.task-card');
-        if (card) {
-            draggedTaskId = card.dataset.id;
-            card.style.opacity = '0.5';
+        const target = e.target;
+        if (target && typeof target.closest === 'function') {
+            const card = target.closest('.task-card');
+            if (card) {
+                draggedTaskId = card.dataset.id;
+                card.style.opacity = '0.5';
+            }
         }
     });
+    
     document.addEventListener('dragend', e => {
-        const card = e.target.closest('.task-card');
-        if (card) card.style.opacity = '1';
-        draggedTaskId = null;
+        const target = e.target;
+        if (target && typeof target.closest === 'function') {
+            const card = target.closest('.task-card');
+            if (card) card.style.opacity = '1';
+            draggedTaskId = null;
+        }
     });
 }
 
@@ -396,4 +422,5 @@ document.addEventListener('click', (e) => {
 });
 
 window.renderTasksForBoard = renderTasksForBoard;
+window.updateTaskDetails = updateTaskDetails;
 console.log("✅ API Integration загружена");

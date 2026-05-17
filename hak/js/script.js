@@ -1,9 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- ПЕРЕМЕННАЯ ДЛЯ DRAG AND DROP ---
     let draggedCard = null;
 
-    // Выпадающее меню экспорта
     document.getElementById('exportBtn').addEventListener('click', function (e) {
         const menu = document.getElementById('exportMenu');
         menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
@@ -14,14 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (menu) menu.style.display = 'none';
     });
 
-    // --- 1. КЛИКИ ПО КАРТОЧКАМ И ОТКРЫТИЕ САЙДБАРА (ДЕЛЕГИРОВАНИЕ) ---
     const taskSidebar = document.getElementById('task-sidebar');
     let activeCardForEdit = null;
 
     document.addEventListener('click', (e) => {
         const card = e.target.closest('.task-card');
 
-        // Удаление карточки при клике на корзину
         if (e.target.classList.contains('delete-icon')) {
             e.stopPropagation();
             const cardToRemove = e.target.closest('.task-card');
@@ -34,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Клик по самой карточке задачи
         if (card) {
             document.querySelectorAll('.task-card').forEach(c => c.classList.remove('active'));
             card.classList.add('active');
@@ -43,21 +38,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (taskSidebar) {
                 const sidebarName = taskSidebar.querySelector('.input-task-name');
                 const sidebarDesc = taskSidebar.querySelector('.textarea-task-desc');
-
-                // Элементы управления параметрами в сайдбаре
                 const sidebarDeadlineInput = taskSidebar.querySelector('.sidebar-input-deadline');
                 const sidebarExecutorSelect = taskSidebar.querySelector('.sidebar-input-executor');
                 const sidebarPrioritySelect = taskSidebar.querySelector('.sidebar-input-priority');
                 const sidebarStatusSelect = taskSidebar.querySelector('.sidebar-input-status');
                 const sidebarTagsInput = taskSidebar.querySelector('.sidebar-input-tags');
-
                 const createdDateEl = document.getElementById('sidebar-created-date');
 
-                // Считываем имя задачи без иконки удаления
                 const titleElement = card.querySelector('.task-title');
                 let titleText = titleElement ? titleElement.textContent.replace('🗑', '').trim() : '';
 
-                // Считываем внутренние поля карточки
                 const fields = card.querySelectorAll('.task-field');
                 let deadlineText = '';
                 let executorText = 'Не назначен';
@@ -74,24 +64,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                // Находим все теги на карточке и собираем их в массив
                 const tagElements = card.querySelectorAll('.task-sidebar-tag, .task-tag');
                 const tagsArray = [];
                 tagElements.forEach(el => tagsArray.push(el.textContent.trim()));
 
                 const savedDesc = card.dataset.description || '';
 
-                // Заполняем текстовые поля сайдбара
                 if (sidebarName) sidebarName.value = titleText;
                 if (sidebarDesc) sidebarDesc.value = savedDesc;
 
-                // Устанавливаем дату создания
                 if (!card.dataset.createdDate) {
                     card.dataset.createdDate = new Date().toLocaleDateString('ru-RU');
                 }
                 if (createdDateEl) createdDateEl.innerHTML = `Дата создания: <strong>${card.dataset.createdDate}</strong>`;
 
-                // Выставляем текущий статус (название колонки) в селект сайдбара
                 const parentColumn = card.closest('.column');
                 const colTitle = parentColumn ? parentColumn.querySelector('.column-title').textContent.trim() : 'To-Do';
 
@@ -106,12 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     sidebarStatusSelect.value = colTitle;
                 }
 
-                // Заполняем инпут дедлайна
                 if (sidebarDeadlineInput) {
                     sidebarDeadlineInput.value = (deadlineText === 'Не задан' || !deadlineText) ? '' : deadlineText;
                 }
 
-                // Выставляем нужного исполнителя в списке
                 if (sidebarExecutorSelect) {
                     let foundOption = false;
                     for (let i = 0; i < sidebarExecutorSelect.options.length; i++) {
@@ -124,7 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!foundOption) sidebarExecutorSelect.selectedIndex = 0;
                 }
 
-                // Выставляем нужный приоритет в списке
                 if (sidebarPrioritySelect) {
                     let foundOption = false;
                     for (let i = 0; i < sidebarPrioritySelect.options.length; i++) {
@@ -137,12 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!foundOption) sidebarPrioritySelect.selectedIndex = 1;
                 }
 
-                // Заполняем инпут тегов строкой через запятую
                 if (sidebarTagsInput) {
                     sidebarTagsInput.value = tagsArray.join(', ');
                 }
 
-                // Перерисовываем превью тегов в сайдбаре
                 const sidebarTagsContainer = document.getElementById('sidebar-tags-container');
                 if (sidebarTagsContainer) {
                     sidebarTagsContainer.innerHTML = '';
@@ -161,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Логика кнопки "Закрыть" в сайдбаре
     if (taskSidebar) {
         const closeSidebar = taskSidebar.querySelector('.close-btn');
         if (closeSidebar) {
@@ -172,10 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Кнопка "Применить изменения"
         const applyBtn = taskSidebar.querySelector('.btn-apply-changes');
         if (applyBtn) {
-            applyBtn.addEventListener('click', () => {
+            applyBtn.addEventListener('click', async () => {
                 if (!activeCardForEdit) return;
 
                 const sidebarName = taskSidebar.querySelector('.input-task-name');
@@ -191,18 +170,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // 1. Обновляем название
+                // Обновляем карточку
                 const titleElement = activeCardForEdit.querySelector('.task-title');
                 if (titleElement && sidebarName) {
                     titleElement.innerHTML = `${sidebarName.value} <span class="delete-icon">🗑</span>`;
                 }
 
-                // 2. Обновляем скрытое описание в dataset
                 if (sidebarDesc) {
                     activeCardForEdit.dataset.description = sidebarDesc.value;
                 }
 
-                // 3. Обновляем дедлайн на карточке
                 if (sidebarDeadlineInput) {
                     const fields = activeCardForEdit.querySelectorAll('.task-field');
                     fields.forEach(field => {
@@ -212,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-                // 4. Обновляем исполнителя на карточке
                 if (sidebarExecutorSelect) {
                     const selectedText = sidebarExecutorSelect.options[sidebarExecutorSelect.selectedIndex].text;
                     const fields = activeCardForEdit.querySelectorAll('.task-field');
@@ -223,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-                // 5. Обновляем приоритет на карточке и перекрашиваем плашку
                 if (sidebarPrioritySelect) {
                     const selectedPriorityText = sidebarPrioritySelect.options[sidebarPrioritySelect.selectedIndex].text;
                     const fields = activeCardForEdit.querySelectorAll('.task-field');
@@ -232,29 +207,21 @@ document.addEventListener('DOMContentLoaded', () => {
                             let priorityClass = 'priority-medium';
                             if (selectedPriorityText === 'Низкий') priorityClass = 'priority-low';
                             if (selectedPriorityText === 'Высокий') priorityClass = 'priority-high';
-
                             field.innerHTML = `Важность: <span class="priority-badge ${priorityClass}">${selectedPriorityText}</span>`;
                         }
                     });
                 }
 
-                // 6. Обновляем теги на карточке разбиением строки на плашки
                 if (sidebarTagsInput) {
                     const oldTags = activeCardForEdit.querySelectorAll('.task-sidebar-tag, .task-tag');
                     oldTags.forEach(el => el.remove());
-
-                    const tagsArray = sidebarTagsInput.value.split(',')
-                        .map(tag => tag.trim())
-                        .filter(tag => tag.length > 0);
-
+                    const tagsArray = sidebarTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
                     tagsArray.forEach(tag => {
                         const tagSpan = document.createElement('span');
                         tagSpan.className = 'task-sidebar-tag';
                         tagSpan.textContent = tag;
                         activeCardForEdit.appendChild(tagSpan);
                     });
-
-                    // Синхронизируем плашки-превью в сайдбаре
                     const sidebarTagsContainer = document.getElementById('sidebar-tags-container');
                     if (sidebarTagsContainer) {
                         sidebarTagsContainer.innerHTML = '';
@@ -267,31 +234,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // 7. ЛОГИКА СМЕНЫ СТАТУСА (ТЕПЕРЬ С УЧЕТОМ ОТСУТСТВИЯ КНОПКИ В DONE)
                 if (sidebarStatusSelect) {
                     const targetColumnTitle = sidebarStatusSelect.value;
                     const currentColumn = activeCardForEdit.closest('.column');
                     const currentColumnTitle = currentColumn.querySelector('.column-title').textContent.trim();
-
                     if (targetColumnTitle !== currentColumnTitle) {
                         const allColumns = document.querySelectorAll('.column');
                         let targetColumn = null;
-
                         allColumns.forEach(col => {
                             if (col.querySelector('.column-title').textContent.trim() === targetColumnTitle) {
                                 targetColumn = col;
                             }
                         });
-
                         if (targetColumn) {
                             const targetBtn = targetColumn.querySelector('.add-task-btn');
-
                             if (targetColumnTitle === 'Done') {
                                 activeCardForEdit.classList.add('done');
                             } else {
                                 activeCardForEdit.classList.remove('done');
                             }
-
                             if (targetBtn) {
                                 targetColumn.insertBefore(activeCardForEdit, targetBtn);
                             } else {
@@ -301,12 +262,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                // Сохраняем в БД
+                const updatedTask = {
+    title: sidebarName.value,
+    description: sidebarDesc.value,
+    status: sidebarStatusSelect.value === 'To-Do' ? 'todo' : sidebarStatusSelect.value === 'In Progress' ? 'progress' : 'done',
+    priority: sidebarPrioritySelect.value,
+    tags: sidebarTagsInput.value.split(',').map(t => t.trim()).filter(t => t),
+    dueDate: sidebarDeadlineInput.value || null,
+    assignee: sidebarExecutorSelect.options[sidebarExecutorSelect.selectedIndex]?.text || '',
+    boardId: localStorage.getItem('collabo_current_board_id')
+};
+
+                try {
+                    if (typeof updateTaskDetails !== 'undefined') {
+                        await updateTaskDetails(activeCardForEdit.dataset.id, updatedTask);
+                        console.log('✅ Задача обновлена в БД');
+                    } else {
+                        console.warn('updateTaskDetails не найдена');
+                    }
+                } catch (error) {
+                    console.error('Ошибка сохранения в БД:', error);
+                    alert('Не удалось сохранить изменения в БД');
+                }
+
                 alert("Изменения успешно сохранены!");
             });
         }
     }
 
-    // --- ЛОГИКА DRAG AND DROP (ПЕРЕТАСКИВАНИЕ КАРТОЧЕК) ---
+    // DRAG AND DROP
     document.addEventListener('dragstart', (e) => {
         const card = e.target.closest('.task-card');
         if (card) {
@@ -325,22 +310,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const mainBoardArea = document.querySelector('.board-area');
     if (mainBoardArea) {
-        mainBoardArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
+        mainBoardArea.addEventListener('dragover', (e) => e.preventDefault());
         mainBoardArea.addEventListener('drop', (e) => {
             e.preventDefault();
             const targetColumn = e.target.closest('.column');
             if (targetColumn && draggedCard) {
                 const columnTitle = targetColumn.querySelector('.column-title').textContent.trim();
-
                 if (columnTitle === 'Done') {
                     draggedCard.classList.add('done');
                 } else {
                     draggedCard.classList.remove('done');
                 }
-
                 const targetBtn = targetColumn.querySelector('.add-task-btn');
                 if (targetBtn) {
                     targetColumn.insertBefore(draggedCard, targetBtn);
@@ -351,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 2. ЛОГИКА ДЛЯ ОКНА "ДОБАВИТЬ СТОЛБЕЦ" ---
+    // ДОБАВИТЬ СТОЛБЕЦ
     const openAddColBtn = document.getElementById('open-add-column-btn');
     const addColModal = document.getElementById('add-column-modal');
     const columnsContainer = document.querySelector('.board-columns-container') || document.querySelector('.board-area');
@@ -364,12 +344,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitColumnBtn = addColModal.querySelector('.modal-submit-btn');
         if (submitColumnBtn) {
             submitColumnBtn.addEventListener('click', () => {
-                // Точечно собираем поля формы по порядку их расположения в HTML
                 const modalInputs = addColModal.querySelectorAll('.modal-input');
-                const columnNameInput = modalInputs[0];  // Инпут названия
-                const roleSelect = modalInputs[1];       // Селект роли
-                const sendNotifySelect = modalInputs[2]; // 🌟 Селект "Отправлять ли уведомления?"
-                const notifyTypeSelect = modalInputs[3]; // Селект типа уведомлений
+                const columnNameInput = modalInputs[0];
+                const roleSelect = modalInputs[1];
+                const sendNotifySelect = modalInputs[2];
+                const notifyTypeSelect = modalInputs[3];
 
                 if (!columnNameInput || !columnNameInput.value.trim()) {
                     alert('Пожалуйста, введите название столбца');
@@ -377,8 +356,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const titleText = columnNameInput.value.trim();
-
-                // Создаем элемент нового столбца
                 const newColumn = document.createElement('div');
                 newColumn.className = 'column';
                 newColumn.innerHTML = `
@@ -388,13 +365,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <button class="add-task-btn">+ Добавить задачу</button>
                 `;
-
-                // Сохраняем выбранные настройки в dataset столбца (для будущей синхронизации)
                 newColumn.dataset.allowedRole = roleSelect ? roleSelect.value : 'all';
                 newColumn.dataset.sendNotifications = sendNotifySelect ? sendNotifySelect.value : 'yes';
                 newColumn.dataset.notificationType = notifyTypeSelect ? notifyTypeSelect.value : 'email';
 
-                // Динамически регистрируем имя нового столбца в селекте статусов правого сайдбара
                 const sidebarStatusSelect = taskSidebar ? taskSidebar.querySelector('.sidebar-input-status') : null;
                 if (sidebarStatusSelect) {
                     const newOpt = document.createElement('option');
@@ -403,25 +377,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     sidebarStatusSelect.appendChild(newOpt);
                 }
 
-                // Вставляем колонку на доску
                 if (columnsContainer) columnsContainer.appendChild(newColumn);
-
-                // Сбрасываем форму модального окна в начальное состояние
                 columnNameInput.value = '';
                 if (roleSelect) roleSelect.selectedIndex = 0;
-                if (sendNotifySelect) sendNotifySelect.selectedIndex = 0; // "Да, отправлять" по дефолту
+                if (sendNotifySelect) sendNotifySelect.selectedIndex = 0;
                 if (notifyTypeSelect) notifyTypeSelect.selectedIndex = 0;
-
                 addColModal.classList.add('hidden');
             });
         }
     }
 
-    // --- 3. ЛОГИКА ДЛЯ ОКНА "ПАРАМЕТРЫ ДОСКИ" ---
+    // ПАРАМЕТРЫ ДОСКИ
     const openParamsBtn = document.getElementById('open-board-params-btn');
     const paramsModal = document.getElementById('board-params-modal');
-
-    // Глобальный объект для хранения настроек доски (подготовлен для отправки в ASP.NET Core)
     let globalBoardSettings = {
         adminEmail: '',
         sendNotifications: 'yes',
@@ -430,9 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (openParamsBtn && paramsModal) {
-        // Открытие модального окна параметров
         openParamsBtn.addEventListener('click', () => {
-            // Перед открытием подставляем ранее сохраненные значения в инпуты
             const inputs = paramsModal.querySelectorAll('.modal-input, textarea.modal-input');
             if (inputs.length >= 4) {
                 inputs[0].value = globalBoardSettings.adminEmail;
@@ -443,52 +409,38 @@ document.addEventListener('DOMContentLoaded', () => {
             paramsModal.classList.remove('hidden');
         });
 
-        // Закрытие модального окна
         paramsModal.querySelector('.modal-close').addEventListener('click', () => paramsModal.classList.add('hidden'));
         paramsModal.addEventListener('click', (e) => { if (e.target === paramsModal) paramsModal.classList.add('hidden'); });
 
-        // Обработка кнопки "Сохранить параметры"
         const saveParamsBtn = paramsModal.querySelector('.modal-submit-btn');
         if (saveParamsBtn) {
             saveParamsBtn.addEventListener('click', () => {
-                // Находим все элементы формы ввода внутри этой модалки
                 const inputs = paramsModal.querySelectorAll('.modal-input, textarea.modal-input');
-
                 const emailValue = inputs[0].value.trim();
                 const sendNotifyValue = inputs[1].value;
                 const periodValue = inputs[2].value;
                 const templateValue = inputs[3].value.trim();
-
-                // Валидация: если email введен, проверяем его формат
                 if (emailValue && !emailValue.includes('@')) {
                     alert('Пожалуйста, введите корректный Email администратора');
                     return;
                 }
-
-                // Записываем новые данные в наш объект настроек доски
                 globalBoardSettings.adminEmail = emailValue;
                 globalBoardSettings.sendNotifications = sendNotifyValue;
                 globalBoardSettings.notificationPeriod = periodValue;
                 globalBoardSettings.notificationTemplate = templateValue;
-
-                // Выводим подтверждение (в будущем здесь будет fetch-запрос к контроллеру ASP.NET)
                 console.log('Глобальные настройки доски успешно сохранены:', globalBoardSettings);
                 alert('Глобальные параметры доски успешно сохранены!');
-
-                // Закрываем модалку
                 paramsModal.classList.add('hidden');
             });
         }
     }
 
-    // --- 4. ЛОГИКА ДЛЯ ОКНА СОЗДАНИЯ И ДОБАВЛЕНИЯ ЗАДАЧИ ---
+    // СОЗДАНИЕ ЗАДАЧИ
     const addTaskModal = document.getElementById('add-task-modal');
     let currentColumn = null;
-
-    // 🌟 ИСПРАВЛЕНО: Объявляем boardArea корректно, чтобы делегирование кликов по кнопкам "+ Добавить задачу" работало всегда
-    const currentBoardArea = document.querySelector('.board-area');
-    if (currentBoardArea) {
-        currentBoardArea.addEventListener('click', (e) => {
+    const currentBoardAreaModal = document.querySelector('.board-area');
+    if (currentBoardAreaModal) {
+        currentBoardAreaModal.addEventListener('click', (e) => {
             if (e.target.classList.contains('add-task-btn')) {
                 currentColumn = e.target.closest('.column');
                 if (addTaskModal) addTaskModal.classList.remove('hidden');
@@ -496,9 +448,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const closeBtn = addTaskModal ? addTaskModal.querySelector('.modal-close') : null;
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
+    const closeModalBtn = addTaskModal ? addTaskModal.querySelector('.modal-close') : null;
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => {
             addTaskModal.classList.add('hidden');
             currentColumn = null;
         });
@@ -513,9 +465,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const submitTaskBtn = addTaskModal ? addTaskModal.querySelector('.modal-submit-btn') : null;
-    if (submitTaskBtn) {
-        submitTaskBtn.addEventListener('click', () => {
+    const submitTaskButton = addTaskModal ? addTaskModal.querySelector('.modal-submit-btn') : null;
+    if (submitTaskButton) {
+        submitTaskButton.addEventListener('click', () => {
             if (!currentColumn) return;
 
             const nameInput = addTaskModal.querySelector('input[type="text"]:not([placeholder*="design"])');
@@ -533,12 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const executorText = executorSelect && executorSelect.selectedIndex >= 0 ? executorSelect.options[executorSelect.selectedIndex].text : 'Не назначен';
             const priorityText = prioritySelect && prioritySelect.selectedIndex >= 0 ? prioritySelect.options[prioritySelect.selectedIndex].text : 'Средний';
-
-            const initialTags = tagsInput && tagsInput.value
-                ? tagsInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0)
-                : [];
+            const initialTags = tagsInput && tagsInput.value ? tagsInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
             const tagsHTML = initialTags.map(tag => `<span class="task-sidebar-tag">${tag}</span>`).join('');
-
             let initialPriorityClass = 'priority-medium';
             if (priorityText === 'Низкий') initialPriorityClass = 'priority-low';
             if (priorityText === 'Высокий') initialPriorityClass = 'priority-high';
@@ -546,12 +494,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const newTaskCard = document.createElement('div');
             newTaskCard.className = 'task-card';
             newTaskCard.setAttribute('draggable', 'true');
-
             const columnTitle = currentColumn.querySelector('.column-title').textContent.trim();
-            if (columnTitle === 'Done') {
-                newTaskCard.classList.add('done');
-            }
-
+            if (columnTitle === 'Done') newTaskCard.classList.add('done');
             newTaskCard.dataset.description = descInput ? descInput.value : '';
             newTaskCard.dataset.createdDate = new Date().toLocaleDateString('ru-RU');
 
@@ -562,61 +506,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="task-field">Важность: <span class="priority-badge ${initialPriorityClass}">${priorityText}</span></div>
                 ${tagsHTML}
             `;
-
             const targetBtn = currentColumn.querySelector('.add-task-btn');
-            if (targetBtn) {
-                currentColumn.insertBefore(newTaskCard, targetBtn);
-            } else {
-                currentColumn.appendChild(newTaskCard);
-            }
+            if (targetBtn) currentColumn.insertBefore(newTaskCard, targetBtn);
+            else currentColumn.appendChild(newTaskCard);
 
-            if (nameInput) nameInput.value = '';
+            nameInput.value = '';
             if (descInput) descInput.value = '';
             if (executorSelect) executorSelect.selectedIndex = 0;
             if (dateInput) dateInput.value = '';
             if (prioritySelect) prioritySelect.selectedIndex = 1;
             if (tagsInput) tagsInput.value = '';
-
             addTaskModal.classList.add('hidden');
             currentColumn = null;
         });
     }
-    // --- 5. ЛОГИКА ДЛЯ ОКНА "РЕДАКТИРОВАТЬ СТОЛБЕЦ" (ДЕЛЕГИРОВАНИЕ) ---
+
+    // РЕДАКТИРОВАНИЕ СТОЛБЦА
     const editColModal = document.getElementById('edit-column-modal');
-    let currentColumnToEdit = null; // Храним ссылку на редактируемый столбец
+    let currentColumnToEdit = null;
 
     if (editColModal) {
-        // 1. Ловим клики по кнопкам "Изменить" во всей рабочей области доски
-        const boardContainer = document.querySelector('.board-area');
-        if (boardContainer) {
-            boardContainer.addEventListener('click', (e) => {
+        const boardContainerEdit = document.querySelector('.board-area');
+        if (boardContainerEdit) {
+            boardContainerEdit.addEventListener('click', (e) => {
                 if (e.target.classList.contains('column-edit')) {
                     currentColumnToEdit = e.target.closest('.column');
                     if (!currentColumnToEdit) return;
-
-                    // Извлекаем текущие параметры столбца
                     const colTitleElement = currentColumnToEdit.querySelector('.column-title');
                     const colTitleText = colTitleElement ? colTitleElement.textContent.trim() : '';
-
                     const allowedRole = currentColumnToEdit.dataset.allowedRole || 'all';
                     const hasAddBtn = currentColumnToEdit.querySelector('.add-task-btn') ? 'yes' : 'no';
-
-                    // Заполняем поля модального окна актуальными данными столбца
                     const nameInput = editColModal.querySelector('.id-col-name');
                     const roleSelect = editColModal.querySelector('.id-col-role');
                     const btnToggleSelect = editColModal.querySelector('.id-col-btn-toggle');
-
                     if (nameInput) nameInput.value = colTitleText;
                     if (roleSelect) roleSelect.value = allowedRole;
                     if (btnToggleSelect) btnToggleSelect.value = hasAddBtn;
-
-                    // Открываем модальное окно
                     editColModal.classList.remove('hidden');
                 }
             });
         }
 
-        // 2. Закрытие модального окна
         editColModal.querySelector('.modal-close').addEventListener('click', () => {
             editColModal.classList.add('hidden');
             currentColumnToEdit = null;
@@ -628,30 +558,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 3. Обработка кнопки "Сохранить изменения"
         const saveColBtn = editColModal.querySelector('.id-save-col-btn');
         if (saveColBtn) {
             saveColBtn.addEventListener('click', () => {
                 if (!currentColumnToEdit) return;
-
                 const nameInput = editColModal.querySelector('.id-col-name');
                 const roleSelect = editColModal.querySelector('.id-col-role');
                 const btnToggleSelect = editColModal.querySelector('.id-col-btn-toggle');
-
                 const newName = nameInput ? nameInput.value.trim() : '';
-
                 if (!newName) {
                     alert('Название столбца не может быть пустым');
                     return;
                 }
-
-                // Обновляем текст заголовка на доске
                 const colTitleElement = currentColumnToEdit.querySelector('.column-title');
                 if (colTitleElement) {
                     const oldName = colTitleElement.textContent.trim();
                     colTitleElement.textContent = newName;
-
-                    // Синхронизируем выпадающий список статусов в правом сайдбаре задач
                     if (oldName !== newName) {
                         const sidebarStatusSelect = document.querySelector('.sidebar-input-status');
                         if (sidebarStatusSelect) {
@@ -664,18 +586,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
-
-                // Сохраняем права доступа в data-атрибут
-                if (roleSelect) {
-                    currentColumnToEdit.dataset.allowedRole = roleSelect.value;
-                }
-
-                // Управляем видимостью кнопки "+ Добавить задачу"
+                if (roleSelect) currentColumnToEdit.dataset.allowedRole = roleSelect.value;
                 if (btnToggleSelect) {
                     let taskBtn = currentColumnToEdit.querySelector('.add-task-btn');
-
                     if (btnToggleSelect.value === 'yes') {
-                        // Если кнопки нет — создаем её и крепим в самый низ
                         if (!taskBtn) {
                             taskBtn = document.createElement('button');
                             taskBtn.className = 'add-task-btn';
@@ -683,46 +597,34 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentColumnToEdit.appendChild(taskBtn);
                         }
                     } else {
-                        // Если выбрали скрыть — удаляем её из DOM
                         if (taskBtn) taskBtn.remove();
                     }
                 }
-
                 editColModal.classList.add('hidden');
                 currentColumnToEdit = null;
                 alert('Параметры столбца успешно обновлены!');
             });
         }
 
-        // 4. Обработка кнопки "Удалить столбец"
         const deleteColBtn = editColModal.querySelector('.id-delete-col-btn');
         if (deleteColBtn) {
             deleteColBtn.addEventListener('click', () => {
                 if (!currentColumnToEdit) return;
-
                 const colTitleElement = currentColumnToEdit.querySelector('.column-title');
                 const colName = colTitleElement ? colTitleElement.textContent.trim() : 'этот';
-
                 if (confirm(`Вы уверены, что хотите полностью удалить столбец "${colName}" вместе со всеми его задачами?`)) {
-
-                    // Удаляем этот статус из выпадающего списка в правом сайдбаре
                     const sidebarStatusSelect = document.querySelector('.sidebar-input-status');
                     if (sidebarStatusSelect) {
                         Array.from(sidebarStatusSelect.options).forEach(opt => {
                             if (opt.value === colName) opt.remove();
                         });
                     }
-
-                    // Если открыт сайдбар удаляемой задачи, закрываем его
                     if (taskSidebar && !taskSidebar.classList.contains('hidden') && activeCardForEdit) {
                         if (activeCardForEdit.closest('.column') === currentColumnToEdit) {
                             taskSidebar.classList.add('hidden');
                         }
                     }
-
-                    // Удаляем саму колонку из DOM-дерева доски
                     currentColumnToEdit.remove();
-
                     editColModal.classList.add('hidden');
                     currentColumnToEdit = null;
                 }

@@ -363,7 +363,7 @@
 
 			const token = localStorage.getItem('token');
 			const API_URL = window.location.origin + "/api";
-			const response = await fetch(`${API_URL}/boards/${currentBoardId}/invite`, {
+			const response = await authfetch(`${API_URL}/boards/${currentBoardId}/invite`, {
 			method: 'POST',
 			headers: {
 			'Content-Type': 'application/json',
