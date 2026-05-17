@@ -1,14 +1,15 @@
+using Collabo.Data;
 using Collabo.Hubs;
 using Collabo.Models;
-using Collabo.Data;
+using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using System.Security.Claims;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +51,21 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// ========== RABBITMQ ==========
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("localhost", "/", h =>
+        {
+            h.Username("guest");
+            h.Password("guest");
+        });
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
 builder.WebHost.UseUrls("http://0.0.0.0:5000");
 
 var app = builder.Build();
@@ -161,13 +177,17 @@ app.MapPut("/api/tasks/{id}", async (Guid id, TaskItem update, AppDbContext db, 
     return Results.Ok(task);
 });
 
-app.MapDelete("/api/tasks/{id}", async (Guid id, AppDbContext db, IHubContext<TasksHub> hub) =>
+app.MapDelete("/api/tasks/{id}", async (Guid id, AppDbContext db, IHubContext<TasksHub> hub, IPublishEndpoint publishEndpoint) =>
 {
     var task = await db.Tasks.FindAsync(id);
     if (task is null) return Results.NotFound();
     db.Tasks.Remove(task);
     await db.SaveChangesAsync();
     await hub.Clients.All.SendAsync("TaskDeleted", id);
+
+    // Отправка в RabbitMQ
+    await publishEndpoint.Publish(new TaskDeletedEvent { TaskId = id, TaskTitle = task.Title });
+
     return Results.Ok();
 });
 
@@ -210,7 +230,6 @@ app.MapPost("/api/auth/login", async (LoginRequest request, UserManager<Applicat
 
 // ========== ПРИГЛАШЕНИЯ (ОБЩИЕ ДОСКИ) ==========
 
-// Получить все доски пользователя (свои + приглашённые)
 app.MapGet("/api/user/boards", async (AppDbContext db, HttpContext httpContext) =>
 {
     var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -226,7 +245,6 @@ app.MapGet("/api/user/boards", async (AppDbContext db, HttpContext httpContext) 
     return Results.Ok(allBoards);
 }).RequireAuthorization();
 
-// Пригласить пользователя в доску (только владелец)
 app.MapPost("/api/boards/{boardId}/invite", async (Guid boardId, InviteRequest request, AppDbContext db, HttpContext httpContext) =>
 {
     var currentUserId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -283,4 +301,10 @@ public class LoginRequest
 public class InviteRequest
 {
     public string Email { get; set; } = "";
+}
+
+public class TaskDeletedEvent
+{
+    public Guid TaskId { get; set; }
+    public string TaskTitle { get; set; } = "";
 }

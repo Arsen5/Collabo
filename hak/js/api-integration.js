@@ -33,7 +33,9 @@ function createTaskCard(task) {
     card.className = 'task-card';
     card.setAttribute('data-id', task.id);
     card.setAttribute('draggable', 'true');
-    
+    if (task.tags && task.tags.includes('bug')) {
+    card.classList.add('task-bug');
+}
     if (task.tags && task.tags.includes('urgent')) {
         task.priority = 'high';
     }
